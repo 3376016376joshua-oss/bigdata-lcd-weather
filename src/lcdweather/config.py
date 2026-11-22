@@ -28,6 +28,7 @@ DEFAULT_FIRST_YEAR = 2010
 DEFAULT_LAST_YEAR = 2025
 DEFAULT_BASE_URL = "https://www.ncei.noaa.gov/oa/local-climatological-data/v2/access"
 DEFAULT_LOCAL_RAW_DIR = "data/raw"
+HDFS_SCHEME = "hdfs://"
 DEFAULT_FIVETHIRTYEIGHT_DIR = "data/fivethirtyeight"
 DEFAULT_MANIFESTS_DIR = "manifests"
 DEFAULT_RESULTS_DIR = "results"
@@ -92,6 +93,12 @@ def _year(env: Mapping[str, str], name: str, default: int) -> int:
         raise ValueError(f"{name} must be a year such as {default}, got {raw!r}") from error
 
 
+def _cluster_uri(root: str) -> str:
+    """``root`` without a trailing slash, as ``hdfs://`` when it names no scheme."""
+    root = root.rstrip("/")
+    return root if "://" in root else f"{HDFS_SCHEME}{root}"
+
+
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     """Build the settings from ``env`` (the process environment when omitted)."""
     env = os.environ if env is None else env
@@ -108,7 +115,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         netid=netid,
         first_year=first_year,
         last_year=last_year,
-        hdfs_root=text(ENV_HDFS_ROOT, f"hdfs:///user/{netid}_nyu_edu/lcd").rstrip("/"),
+        hdfs_root=_cluster_uri(text(ENV_HDFS_ROOT, f"hdfs:///user/{netid}_nyu_edu/lcd")),
         hive_db=text(ENV_HIVE_DB, f"{netid}_nyu_edu"),
         base_url=text(ENV_BASE_URL, DEFAULT_BASE_URL).rstrip("/"),
         local_raw_dir=text(ENV_LOCAL_RAW_DIR, DEFAULT_LOCAL_RAW_DIR),

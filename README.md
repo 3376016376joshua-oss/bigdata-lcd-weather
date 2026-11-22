@@ -79,7 +79,7 @@ Every script and job reads the same settings, each overridable with an environme
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `LCD_NETID` | `wl3564` | NYU NetID that owns the HDFS home and the Hive database |
-| `LCD_HDFS_ROOT` | `hdfs:///user/<netid>_nyu_edu/lcd` | Root of the `raw/`, `clean/`, `fivethirtyeight/` and `results/` zones |
+| `LCD_HDFS_ROOT` | `hdfs:///user/<netid>_nyu_edu/lcd` | Root of the `raw/`, `clean/`, `fivethirtyeight/` and `results/` zones; a path without a scheme is read as `hdfs://<path>` |
 | `LCD_HIVE_DB` | `<netid>_nyu_edu` | Hive database |
 | `LCD_FIRST_YEAR`, `LCD_LAST_YEAR` | `2010`, `2025` | Years of the study |
 | `LCD_LOCAL_RAW_DIR` | `data/raw` | Local folder of the downloaded LCD files |
@@ -171,6 +171,9 @@ script are named `phase4`. It answers questions 1-6 from the cleaned Hive tables
 one query and produces one result table with the same name. The same files run on both
 engines: Beeline runs them on Hive, and `jobs/phase4_analysis.py` runs them with Spark SQL,
 so every question has a single definition.
+
+For question 4 this phase covers the seasonal and hour-of-day temperature cycles; the
+clustering of the ten cities is done with k-means in the Spark MLlib phase.
 
 | Question | Query files (`hive/queries/`) |
 | --- | --- |
