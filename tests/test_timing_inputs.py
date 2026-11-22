@@ -37,6 +37,14 @@ def test_local_stats_count_only_files_of_the_window(tmp_path):
     assert stats.rows == 3 + 5 + 2
 
 
+def test_file_uri_raw_root_is_read_from_the_local_path(tmp_path):
+    path = _write_raw(tmp_path, "USW00000001", 2025, data_rows=4)
+
+    stats = measure_inputs(f"file://{tmp_path}", YearWindow(2025, 2025))
+
+    assert (stats.files, stats.bytes, stats.rows) == (1, path.stat().st_size, 4)
+
+
 def test_row_count_can_be_skipped(tmp_path):
     _write_raw(tmp_path, "USW00000001", 2025, data_rows=3)
 

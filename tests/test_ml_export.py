@@ -36,6 +36,16 @@ def test_local_export_writes_one_csv_per_table(spark, tmp_path):
     ]
 
 
+def test_file_uri_export_writes_to_the_local_path(spark, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    target = tmp_path / "results"
+
+    export_results(spark, {"q7_metrics": ROWS}, f"file://{target}")
+
+    assert _read(target / "q7_metrics.csv") == EXPECTED
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["results"]
+
+
 def test_hdfs_export_writes_a_single_part_file_with_one_header(spark, tmp_path, monkeypatch):
     # No HDFS in the test environment: send the Spark writer to the local filesystem.
     monkeypatch.setattr(export, "is_hdfs_uri", lambda path: True)

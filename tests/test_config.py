@@ -121,6 +121,10 @@ class SettingsTest(unittest.TestCase):
         self.assertFalse(config.is_hdfs_uri("/tmp/results"))
         self.assertFalse(config.is_hdfs_uri("gs://bucket/results"))
 
+    def test_file_uris_become_plain_local_paths(self):
+        self.assertEqual(config.local_path("file:///tmp/lcd/results"), "/tmp/lcd/results")
+        self.assertEqual(config.local_path("results"), "results")
+
 
 if __name__ == "__main__":
     unittest.main()

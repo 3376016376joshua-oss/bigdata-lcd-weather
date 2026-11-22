@@ -9,10 +9,16 @@ from lcdweather.ml.daily_features import CITY_KEY, DATE_COL
 from lcdweather.ml.settings import ROUTINE_REPORT_TYPE
 
 TIMESTAMP_COL = "obs_ts"
-# The last routine report of a day is near 23:00, so readings at or before
-# these hours are at least 3 h / 12 h older than it.
+# The last routine report of a day is near 23:00, so the reference readings of
+# the 3 h / 12 h changes are taken at or before these hours.
 LAST_HOUR_3H_BEFORE_DAY_END = 20
 LAST_HOUR_12H_BEFORE_DAY_END = 11
+NOMINAL_3H = 3.0
+NOMINAL_12H = 12.0
+# Hourly reports from about 00:51 to 23:51 span 23 h; a change needs most of that.
+MIN_DAY_SPAN_HOURS = 22.0
+WINDOW_TOLERANCE_HOURS = 1.0
+SECONDS_PER_HOUR = 3600.0
 
 
 def _routine(column: str) -> Column:
@@ -28,9 +34,9 @@ def _pick(value: Column, condition: Column | None = None, latest: bool = True) -
     return F.max(tagged) if latest else F.min(tagged)
 
 
-def _reading(value: Column, condition: Column | None = None) -> Column:
-    """Latest non-null value of the day, optionally restricted."""
-    return _pick(value, condition).getField("value")
+def _reading(value: Column) -> Column:
+    """Latest non-null value of the day."""
+    return _pick(value).getField("value")
 
 
 def _temperature_aggregates() -> list[Column]:
@@ -73,25 +79,33 @@ def _wind_aggregates() -> list[Column]:
     ]
 
 
+def _hours_between(earlier: Column, later: Column) -> Column:
+    seconds = later.getField("ts").cast("long") - earlier.getField("ts").cast("long")
+    return seconds / SECONDS_PER_HOUR
+
+
+def _change(latest: Column, reference: Column, nominal_hours: float) -> Column:
+    """latest - reference, null unless they are within tolerance of `nominal_hours` apart."""
+    gap = _hours_between(reference, latest)
+    in_window = F.abs(gap - nominal_hours) <= WINDOW_TOLERANCE_HOURS
+    return F.when(in_window, latest.getField("value") - reference.getField("value"))
+
+
 def _pressure_aggregates() -> list[Column]:
-    """Pressure changes are null unless the day's readings span the nominal window."""
+    """Pressure changes are null unless the readings span the nominal window."""
     pressure = _routine("station_pressure_hpa")
     hour = F.hour(F.col(TIMESTAMP_COL))
     latest = _pick(pressure)
-    last = latest.getField("value")
-    last_hour = F.hour(latest.getField("ts"))
     earliest = _pick(pressure, latest=False)
-    three_hours_ago = _reading(pressure, hour <= LAST_HOUR_3H_BEFORE_DAY_END)
-    twelve_hours_ago = _reading(pressure, hour <= LAST_HOUR_12H_BEFORE_DAY_END)
-    change_3h = F.when(last_hour > LAST_HOUR_3H_BEFORE_DAY_END, last - three_hours_ago)
-    change_12h = F.when(last_hour > LAST_HOUR_12H_BEFORE_DAY_END, last - twelve_hours_ago)
-    spans_day = latest.getField("ts") > earliest.getField("ts")
-    change_24h = F.when(spans_day, last - earliest.getField("value"))
+    three_hours_ago = _pick(pressure, hour <= LAST_HOUR_3H_BEFORE_DAY_END)
+    twelve_hours_ago = _pick(pressure, hour <= LAST_HOUR_12H_BEFORE_DAY_END)
+    spans_day = _hours_between(earliest, latest) >= MIN_DAY_SPAN_HOURS
+    change_24h = F.when(spans_day, latest.getField("value") - earliest.getField("value"))
     return [
         F.avg(pressure).alias("h24_pressure_mean"),
-        last.alias("h24_pressure_last"),
-        change_3h.alias("h24_pressure_change_3h"),
-        change_12h.alias("h24_pressure_change_12h"),
+        latest.getField("value").alias("h24_pressure_last"),
+        _change(latest, three_hours_ago, NOMINAL_3H).alias("h24_pressure_change_3h"),
+        _change(latest, twelve_hours_ago, NOMINAL_12H).alias("h24_pressure_change_12h"),
         change_24h.alias("h24_pressure_change_24h"),
     ]
 

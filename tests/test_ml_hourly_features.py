@@ -80,18 +80,42 @@ def test_pressure_changes_are_null_when_late_reports_are_missing(spark):
 
     assert summary["h24_pressure_last"] == 1011.0
     assert summary["h24_pressure_change_3h"] is None
-    assert summary["h24_pressure_change_12h"] == pytest.approx(-5.0)
-    assert summary["h24_pressure_change_24h"] == pytest.approx(-9.0)
+    assert summary["h24_pressure_change_12h"] is None
+    assert summary["h24_pressure_change_24h"] is None
 
 
-def test_morning_only_pressure_has_no_3h_or_12h_change(spark):
+def test_pressure_changes_are_null_when_the_reference_reading_is_missing(spark):
+    rows = [_routine(0, 50.0, 1020.0), _routine(11, 60.0, 1016.0), _routine(23, 52.0, 1009.0)]
+
+    summary = _summary(spark, rows)
+
+    assert summary["h24_pressure_change_3h"] is None
+    assert summary["h24_pressure_change_12h"] == pytest.approx(-7.0)
+    assert summary["h24_pressure_change_24h"] == pytest.approx(-11.0)
+
+
+def test_only_midnight_and_late_pressure_has_only_a_24h_change(spark):
+    summary = _summary(spark, [_routine(0, 50.0, 1020.0), _routine(23, 52.0, 1009.0)])
+
+    assert summary["h24_pressure_change_3h"] is None
+    assert summary["h24_pressure_change_12h"] is None
+    assert summary["h24_pressure_change_24h"] == pytest.approx(-11.0)
+
+
+def test_late_evening_pressure_only_has_no_24h_change(spark):
+    summary = _summary(spark, [_routine(22, 53.0, 1010.0), _routine(23, 52.0, 1009.0)])
+
+    assert summary["h24_pressure_change_24h"] is None
+
+
+def test_morning_only_pressure_has_no_changes(spark):
     rows = [_routine(0, 50.0, 1020.0), _routine(11, 60.0, 1016.0)]
 
     summary = _summary(spark, rows)
 
     assert summary["h24_pressure_change_3h"] is None
     assert summary["h24_pressure_change_12h"] is None
-    assert summary["h24_pressure_change_24h"] == pytest.approx(-4.0)
+    assert summary["h24_pressure_change_24h"] is None
 
 
 def test_single_pressure_reading_has_no_24h_change(spark):

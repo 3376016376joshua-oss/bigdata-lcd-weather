@@ -7,7 +7,7 @@ import os
 import subprocess
 from dataclasses import dataclass
 
-from lcdweather.config import is_hdfs_uri
+from lcdweather.config import is_hdfs_uri, local_path
 from lcdweather.timing.plan import YearWindow
 
 RAW_FILE_PATTERN = "LCD_*_{year}.csv"
@@ -89,7 +89,6 @@ def measure_inputs(
     hdfs_command: str = "hdfs",
 ) -> InputStats:
     """Files, bytes and data rows of the raw CSVs for the window's years."""
-    patterns = raw_globs(raw_root, window)
     if is_hdfs_uri(raw_root):
-        return _hdfs_stats(patterns, count_rows, hdfs_command)
-    return _local_stats(patterns, count_rows)
+        return _hdfs_stats(raw_globs(raw_root, window), count_rows, hdfs_command)
+    return _local_stats(raw_globs(local_path(raw_root), window), count_rows)

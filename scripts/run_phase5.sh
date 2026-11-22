@@ -47,7 +47,7 @@ submit_job() {
 
 fetch_results() {
   if [[ "${RESULTS_URI}" != "${LCD_HDFS_SCHEME}"* ]]; then
-    echo "Results were written locally to ${RESULTS_URI}; nothing to fetch."
+    echo "Results were written locally to ${RESULTS_URI#file://}; nothing to fetch."
     return 0
   fi
   mkdir -p "${LOCAL_RESULTS}"

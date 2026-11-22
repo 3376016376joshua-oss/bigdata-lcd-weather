@@ -11,7 +11,7 @@ from typing import Any, Union
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 
-from lcdweather.config import is_hdfs_uri
+from lcdweather.config import is_hdfs_uri, local_path
 
 ResultTable = Union[DataFrame, list[dict]]
 
@@ -56,7 +56,7 @@ def export_result(spark: SparkSession, table: ResultTable, name: str, results_di
         frame = table if is_frame else _rows_to_frame(spark, table)
         _export_remote(frame, f"{results_dir.rstrip('/')}/{name}")
         return
-    path = os.path.join(results_dir, f"{name}.csv")
+    path = os.path.join(local_path(results_dir), f"{name}.csv")
     if is_frame:
         write_local_csv(path, table.columns, [tuple(row) for row in table.collect()])
     else:
