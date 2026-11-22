@@ -221,3 +221,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project: raw downloads stay out of Git (about 1.4 GB); Spark and Hive local leftovers
+/data/
+spark-warehouse/
+metastore_db/
+derby.log
