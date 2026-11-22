@@ -21,9 +21,9 @@ SHARED_VARIABLES = {
 }
 
 
-def values_from_env_sh(overrides: dict) -> dict:
+def values_from_env_sh(overrides: dict, names=tuple(SHARED_VARIABLES)) -> dict:
     """What scripts/env.sh exports when sourced with only ``overrides`` set."""
-    printing = "; ".join(f'echo "{name}=${name}"' for name in SHARED_VARIABLES)
+    printing = "; ".join(f'echo "{name}=${name}"' for name in names)
     completed = subprocess.run(
         ["bash", "-c", f'source "{ENV_SH}"; {printing}'],
         env={"PATH": "/usr/bin:/bin", **overrides},
@@ -110,6 +110,20 @@ class SettingsTest(unittest.TestCase):
                     for name, attribute in SHARED_VARIABLES.items()
                 }
                 self.assertEqual(values_from_env_sh(overrides), expected)
+
+    def test_env_sh_uses_the_python_hdfs_scheme(self):
+        exported = values_from_env_sh({}, (config.ENV_HDFS_SCHEME,))
+        self.assertEqual(exported, {config.ENV_HDFS_SCHEME: config.HDFS_SCHEME})
+
+    def test_only_hdfs_uris_are_hdfs(self):
+        self.assertTrue(config.is_hdfs_uri("hdfs:///user/x/lcd/results"))
+        self.assertFalse(config.is_hdfs_uri("results"))
+        self.assertFalse(config.is_hdfs_uri("/tmp/results"))
+        self.assertFalse(config.is_hdfs_uri("gs://bucket/results"))
+
+    def test_file_uris_become_plain_local_paths(self):
+        self.assertEqual(config.local_path("file:///tmp/lcd/results"), "/tmp/lcd/results")
+        self.assertEqual(config.local_path("results"), "results")
 
 
 if __name__ == "__main__":

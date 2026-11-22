@@ -344,7 +344,71 @@ and draw every figure.
 
 ### Phase 4 - Machine learning with Spark MLlib (questions 7-8)
 
-_Steps are added with the ML code._
+This is Phase 5 of the proposal, so the jobs are named `jobs/phase5_*.py`. They read the
+cleaned Hive tables `lcd_hourly` and `lcd_daily`, whose columns (`obs_ts`, `report_type`,
+`temp_f`, `station_pressure_hpa`, `tmax_f`, `prcp_in`, ...) come from Phase 2, so Phase 2
+must have been run first. Only rows with `is_primary_station` are used, so Los Angeles has
+one station per day.
+
+```bash
+# Submit the three jobs to YARN, then merge their result CSVs from HDFS into results/.
+bash scripts/run_phase5.sh
+
+bash scripts/run_phase5.sh kmeans      # only the named job(s): regression, classification, kmeans
+bash scripts/run_phase5.sh fetch       # only download the results again
+```
+
+The script zips `src/lcdweather` for `--py-files`, so nothing is installed on the cluster.
+`LCD_SPARK_SUBMIT_OPTS` (extra spark-submit flags, shared with `run_phase2.sh`; default
+none, so the cluster defaults apply), `PHASE5_JOB_ARGS` (extra flags for every job) and `PHASE5_GRID` (`full`, or `quick` for a one-point grid) adjust the run. One job by hand:
+
+```bash
+(cd src && python3 -m zipfile -c ../lcdweather.zip lcdweather)
+spark-submit --py-files lcdweather.zip jobs/phase5_regression.py \
+  --database "${LCD_NETID}_nyu_edu" --results-dir "hdfs:///user/${LCD_NETID}_nyu_edu/lcd/results"
+```
+
+| Job | Question | Models | Results |
+| --- | --- | --- | --- |
+| `phase5_regression.py` | 7: next-day maximum temperature | linear regression, gradient-boosted trees, persistence baseline (tomorrow = today) | `q7_tuning`, `q7_metrics` (RMSE, MAE, R2), `q7_metrics_by_city`, `q7_predictions`, `q7_feature_importance` |
+| `phase5_classification.py` | 8: measurable precipitation (>= 0.01 in) on the next day | logistic regression, random forest, persistence baseline | `q8_tuning`, `q8_metrics` (ROC and PR AUC, precision, recall, F1), `q8_confusion_matrix`, `q8_metrics_by_city`, `q8_roc_curve`, `q8_feature_importance`, `q8_class_balance` |
+| `phase5_kmeans.py` | 4: climate types of the ten cities | k-means for k = 2..6, best silhouette selected | `kmeans_silhouette`, `kmeans_assignments`, `kmeans_city_features` |
+
+How the models are built (`src/lcdweather/ml/`):
+
+- **One row per city and day.** Features are known by the end of day *t*; the label belongs to
+  day *t+1*. Regression uses the day-of-year sine and cosine and the month of the predicted
+  day, today's departure from normal, maximum, minimum and mean, the same three values 1, 2
+  and 3 days back, and a summary of today's routine (FM-15) hourly reports: mean, minimum,
+  maximum and last temperature, dew point, humidity, wind, pressure and the pressure change
+  over 3, 12 and 24 hours. Classification uses the pressure changes, humidity, dew point
+  depression, wind and gusts, sky cover, hourly precipitation and the number of special
+  (FM-16) reports, plus month and city.
+- **No leakage.** Lags and labels are taken by calendar-day offset, so a missing day gives a
+  null instead of another day's value, and every window looks backward only. The split is by
+  the predicted day: train 2010-2021, validation 2022-2023, test 2024-2025.
+- **Pipeline.** Median imputer, one-hot city and month, `VectorAssembler`, `StandardScaler`,
+  then the estimator. Imputer and scaler are fitted on the training rows only.
+- **Tuning.** Each grid point is fitted on train and scored on validation (RMSE, ROC AUC);
+  the best one is refitted on train + validation and scored once on test. Classification
+  metrics use a 0.5 decision threshold.
+- **Baselines.** The persistence baseline (tomorrow = today) is scored only on days whose
+  own value is known; those days are never dropped from the models' data.
+
+Figures (need pandas and matplotlib; they read `results/*.csv` and write `figures/*.png`):
+
+```bash
+python3 viz/ml_regression.py       # ml_q7_*: metrics, predicted vs actual, importance, RMSE by city
+python3 viz/ml_classification.py   # ml_q8_*: metrics, ROC and PR curves, confusion, importance
+python3 viz/ml_kmeans.py           # ml_kmeans_*: silhouette, monthly profiles, map of the clusters
+```
+
+A smoke run without Hive, on small generated tables (locally or on the cluster):
+
+```bash
+LCD_SPARK_SUBMIT_OPTS="--master local[2]" PHASE5_JOB_ARGS="--synthetic" PHASE5_GRID=quick \
+  LCD_RESULTS_URI=results bash scripts/run_phase5.sh
+```
 
 ### Phase 5 - Results and figures
 
@@ -371,6 +435,34 @@ done
 | `viz/q4_cycles.py` | `q4_hourly_cycle`, `q4_monthly_climatology` |
 | `viz/q5_precipitation.py` | `q5_precip_actual_vs_normal`, `q5_longest_dry_spells`, `q5_heaviest_rain_days` |
 | `viz/q6_volatility.py` | `q6_city_volatility`, `q6_special_reports_wet_vs_dry`, `q6_special_reports_around_storms` |
+
+### Phase 6 - Run-time scaling
+
+Times the Phase 2 ingestion job (`jobs/phase2_ingest.py`) and the Phase 4 analysis job
+(`jobs/phase4_analysis.py`) on 1, 4, 8 and 16 years of input (2025, 2022-2025, 2018-2025,
+2010-2025) and records wall-clock time against the raw input size. The raw zone must hold
+Phase 1's uploads.
+
+```bash
+bash scripts/run_phase6_timing.sh                              # both jobs, four sizes
+bash scripts/run_phase6_timing.sh --jobs analysis --repeats 3  # median of three runs
+python3 viz/timing_scaling.py                                  # figures/timing_runtime_scaling.png
+```
+
+- `results/runtime_scaling.csv`: one row per run with the job, years, input files, bytes and
+  rows (from `hdfs dfs -du` and a line count of the raw CSVs; `--skip-row-count` skips the
+  count), wall-clock seconds, exit code and the exact command.
+- `results/runtime_scaling_summary.csv`: per job and size the median time, seconds per GB,
+  input and time ratios against the 1-year run, and the slope of log(time) on log(bytes).
+  A slope of 1 is linear growth; below 1 means fixed start-up cost dominates.
+- Each window writes to scratch outputs, never the production cleaned zone or database:
+  `phase2_ingest.py --input <raw zone> --output <clean-root>/<n>y --db <db-prefix>_t<n>y
+  --years <start>-<end>`, then `phase4_analysis.py --db <db-prefix>_t<n>y --results-dir
+  <analysis-results-root>/<n>y`. The defaults are `<LCD_HDFS_ROOT>/timing/clean`,
+  `<LCD_HIVE_DB>_timing` and `<LCD_HDFS_ROOT>/timing/results`; change them with
+  `--clean-root`, `--db-prefix` and `--analysis-results-root`.
+- `--jobs analysis` alone reuses the `<db-prefix>_t<n>y` databases of an earlier ingest run.
+- A failed job is recorded with its exit code and the script exits with status 1.
 
 ## Local development (optional)
 

@@ -28,11 +28,23 @@ DEFAULT_FIRST_YEAR = 2010
 DEFAULT_LAST_YEAR = 2025
 DEFAULT_BASE_URL = "https://www.ncei.noaa.gov/oa/local-climatological-data/v2/access"
 DEFAULT_LOCAL_RAW_DIR = "data/raw"
-HDFS_SCHEME = "hdfs://"
 DEFAULT_FIVETHIRTYEIGHT_DIR = "data/fivethirtyeight"
 DEFAULT_MANIFESTS_DIR = "manifests"
 DEFAULT_RESULTS_DIR = "results"
 DEFAULT_FIGURES_DIR = "figures"
+# Paths with this prefix live on HDFS; anything else is a local path.
+HDFS_SCHEME = "hdfs://"
+ENV_HDFS_SCHEME = "LCD_HDFS_SCHEME"
+LOCAL_FILE_SCHEME = "file://"
+
+
+def is_hdfs_uri(path: str) -> bool:
+    return path.startswith(HDFS_SCHEME)
+
+
+def local_path(path: str) -> str:
+    """A local path or `file://` URI as a plain filesystem path."""
+    return path.removeprefix(LOCAL_FILE_SCHEME)
 
 
 def lcd_filename(station_id: str, year: int) -> str:
