@@ -188,7 +188,8 @@ Definitions used throughout: an extreme day has a daily mean 10 °F or more abov
 normal; a dry day has less than 0.01 in of precipitation (trace is dry); West is Los
 Angeles, Phoenix and Seattle, East is Chicago, Indianapolis, New York and Philadelphia;
 routine reports are `FM-15` and special reports are `FM-16`. Cities are grouped by
-`city_code`, so the two Los Angeles stations form one series. Dry spells
+`city_code`, so the two Los Angeles stations form one series. The hourly cycle puts each
+routine report in its nearest hour (the report at 13:53 counts for 14:00). Dry spells
 (`q5_dry_spells.sql`) use a gaps-and-islands window query.
 
 Run from the repository root on the cluster, after the cleaned tables exist. The scripts
@@ -213,7 +214,8 @@ beeline -u jdbc:hive2://localhost:10000 --hivevar db=wl3564_nyu_edu \
 
 `spark` writes each result to `$LCD_HDFS_ROOT/results/q<N>_<name>/` and `fetch` merges it
 into `results/q<N>_<name>.csv`. To skip HDFS, pass a local directory to the job:
-`scripts/run_phase4.sh spark --results-dir results`.
+`scripts/run_phase4.sh spark --results-dir results`. The `all` step always goes through HDFS
+and rejects `--results-dir`.
 
 The tests in `tests/analysis/` run every query on small synthetic tables in local Spark
 and draw every figure.

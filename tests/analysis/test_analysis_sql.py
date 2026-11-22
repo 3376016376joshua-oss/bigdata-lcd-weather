@@ -75,7 +75,7 @@ def test_select_queries_filters_by_question(queries_dir):
         ("gs://bucket/results", True),
         ("results", False),
         ("/tmp/results", False),
-        ("file:///tmp/results", False),
+        ("file:///tmp/results", True),
     ],
 )
 def test_is_cluster_path(results_dir, expected):

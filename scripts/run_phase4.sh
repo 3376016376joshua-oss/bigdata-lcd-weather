@@ -84,6 +84,14 @@ case "${step}" in
   fetch) fetch_results ;;
   hive) run_hive ;;
   all)
+    for argument in "$@"; do
+      case "${argument}" in
+        --results-dir | --results-dir=*)
+          echo "usage: $0 all writes to HDFS and fetches; use spark --results-dir for a local directory" >&2
+          exit 2
+          ;;
+      esac
+    done
     run_spark "$@"
     fetch_results
     ;;

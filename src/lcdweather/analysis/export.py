@@ -8,12 +8,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
 
-_LOCAL_SCHEME = "file://"
-
 
 def is_cluster_path(results_dir: str) -> bool:
-    """True for ``hdfs://``, ``gs://`` and other non-local URIs."""
-    return "://" in results_dir and not results_dir.startswith(_LOCAL_SCHEME)
+    """True for ``hdfs://``, ``gs://`` and any other path with a scheme."""
+    return "://" in results_dir
 
 
 def write_cluster_csv(frame: DataFrame, target_dir: str) -> str:
@@ -37,4 +35,4 @@ def write_result(frame: DataFrame, name: str, results_dir: str) -> str:
     """
     if is_cluster_path(results_dir):
         return write_cluster_csv(frame, f"{results_dir.rstrip('/')}/{name}")
-    return write_local_csv(frame, Path(results_dir.removeprefix(_LOCAL_SCHEME)) / f"{name}.csv")
+    return write_local_csv(frame, Path(results_dir) / f"{name}.csv")

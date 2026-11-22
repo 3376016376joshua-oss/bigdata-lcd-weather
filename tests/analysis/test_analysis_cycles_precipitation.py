@@ -13,9 +13,9 @@ def test_q4_hourly_profile_uses_routine_reports_only(analysis):
     analysis.load_tables(
         hourly=[
             hourly_row("KSEA", july_1, 0, temp_f=50.0),
-            hourly_row("KSEA", july_2, 0, minute=53, temp_f=54.0),
+            hourly_row("KSEA", july_2, 23, minute=53, temp_f=54.0),
+            hourly_row("KSEA", july_1, 11, minute=53, temp_f=70.0),
             hourly_row("KSEA", july_1, 0, minute=20, report_type=SPECIAL, temp_f=90.0),
-            hourly_row("KSEA", july_1, 12, temp_f=70.0),
             hourly_row("KSEA", july_2, 12, temp_f=None),
             hourly_row("KSEA", date(2014, 1, 1), 12, temp_f=40.0),
         ]

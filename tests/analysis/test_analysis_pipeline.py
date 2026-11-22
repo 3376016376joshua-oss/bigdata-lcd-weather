@@ -140,10 +140,3 @@ def test_write_cluster_csv_writes_one_part_file_with_header(analysis, tmp_path):
     header, row = parts[0].read_text(encoding="utf-8").splitlines()
     assert header.split(",")[:4] == ["city_code", "city", "yr", "mo"]
     assert row.split(",")[:4] == ["KNYC", "New York", "2014", "1"]
-
-
-def test_write_result_accepts_a_file_uri(analysis, tmp_path):
-    analysis.load_tables(daily=[daily_row("KNYC", date(2014, 1, 1), dep_f=12.0)])
-    written = write_result(analysis.frame("q1_monthly_anomaly"), "q1", f"file://{tmp_path}")
-    assert written == str(tmp_path / "q1.csv")
-    assert (tmp_path / "q1.csv").read_text(encoding="utf-8").startswith("city_code,city,yr,mo")
