@@ -165,7 +165,55 @@ added with the ingestion code._
 
 ### Phase 3 - Analysis with Hive and Spark (questions 1-6)
 
-_Steps are added with the analysis code._
+This is Phase 4 of the proposal (geography, time and category analysis), so the job and
+script are named `phase4`. It answers questions 1-6 from the cleaned Hive tables
+`lcd_daily`, `lcd_hourly` and `lcd_monthly`. Each `hive/queries/q<N>_<name>.sql` file holds
+one query and produces one result table with the same name. The same files run on both
+engines: Beeline runs them on Hive, and `jobs/phase4_analysis.py` runs them with Spark SQL,
+so every question has a single definition.
+
+| Question | Query files (`hive/queries/`) |
+| --- | --- |
+| 1 Temperature anomalies, 2014-15 West/East pattern | `q1_monthly_anomaly`, `q1_annual_anomaly`, `q1_city_deviation_ranking`, `q1_jul_jun_city_anomaly`, `q1_west_east_pattern` |
+| 2 Extreme days per city, year and season | `q2_extreme_days_by_year`, `q2_extreme_days_by_season` |
+| 3 Warm against cold extremes and the trend | `q3_balance_by_year`, `q3_balance_trend` |
+| 4 Seasonal and hourly temperature cycles | `q4_monthly_climatology`, `q4_hourly_profile`, `q4_cycle_amplitude` |
+| 5 Precipitation against normal, dry spells, heavy rain | `q5_monthly_precip_vs_normal`, `q5_annual_precip_vs_normal`, `q5_dry_spells`, `q5_heaviest_rain_days`, `q5_california_drought` |
+| 6 Volatility, humidity and special reports | `q6_city_volatility`, `q6_seasonal_volatility`, `q6_special_reports_by_day_type`, `q6_special_reports_correlation`, `q6_special_reports_around_storms` |
+
+Definitions used throughout: an extreme day has a daily mean 10 °F or more above or below
+normal; a dry day has less than 0.01 in of precipitation (trace is dry); West is Los
+Angeles, Phoenix and Seattle, East is Chicago, Indianapolis, New York and Philadelphia;
+routine reports are `FM-15` and special reports are `FM-16`. Cities are grouped by
+`city_code`, so the two Los Angeles stations form one series. Dry spells
+(`q5_dry_spells.sql`) use a gaps-and-islands window query.
+
+Run from the repository root on the cluster, after the cleaned tables exist. The scripts
+read `LCD_NETID`, `LCD_HIVE_DB`, `LCD_HDFS_ROOT` and `LCD_RESULTS_DIR` (see
+`scripts/env.sh`).
+
+```bash
+# Spark SQL: run all queries, write results to HDFS, then copy them into results/
+scripts/run_phase4.sh all
+
+# The same in two steps, or only some questions
+scripts/run_phase4.sh spark --questions 1 5
+scripts/run_phase4.sh fetch
+
+# HiveQL through Beeline: the same queries on Hive, output in results/hive/
+LCD_BEELINE_URL=jdbc:hive2://localhost:10000 scripts/run_phase4.sh hive
+
+# One query by hand
+beeline -u jdbc:hive2://localhost:10000 --hivevar db=wl3564_nyu_edu \
+  -f hive/queries/q5_dry_spells.sql
+```
+
+`spark` writes each result to `$LCD_HDFS_ROOT/results/q<N>_<name>/` and `fetch` merges it
+into `results/q<N>_<name>.csv`. To skip HDFS, pass a local directory to the job:
+`scripts/run_phase4.sh spark --results-dir results`.
+
+The tests in `tests/analysis/` run every query on small synthetic tables in local Spark
+and draw every figure.
 
 ### Phase 4 - Machine learning with Spark MLlib (questions 7-8)
 
@@ -175,6 +223,27 @@ _Steps are added with the ML code._
 
 _Exporting `results/*.csv` from HDFS and drawing the figures. Steps are added with the
 visualization code._
+
+#### Figures for questions 1-6
+
+The figure scripts read only `results/*.csv` and write a PNG (matplotlib/seaborn) and an
+interactive HTML page (Plotly) per figure into `figures/`:
+
+```bash
+for script in viz/q1_anomaly.py viz/q2_extremes.py viz/q3_balance.py \
+              viz/q4_cycles.py viz/q5_precipitation.py viz/q6_volatility.py; do
+  python "$script" --results-dir results --figures-dir figures
+done
+```
+
+| Script | Figures |
+| --- | --- |
+| `viz/q1_anomaly.py` | `q1_anomaly_heatmap`, `q1_west_east_pattern` |
+| `viz/q2_extremes.py` | `q2_extreme_days_by_year`, `q2_extreme_days_by_season` |
+| `viz/q3_balance.py` | `q3_balance_by_year`, `q3_balance_trend_by_city` |
+| `viz/q4_cycles.py` | `q4_hourly_cycle`, `q4_monthly_climatology` |
+| `viz/q5_precipitation.py` | `q5_precip_actual_vs_normal`, `q5_longest_dry_spells`, `q5_heaviest_rain_days` |
+| `viz/q6_volatility.py` | `q6_city_volatility`, `q6_special_reports_wet_vs_dry`, `q6_special_reports_around_storms` |
 
 ## Local development (optional)
 
