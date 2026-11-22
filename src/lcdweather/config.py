@@ -33,6 +33,13 @@ DEFAULT_FIVETHIRTYEIGHT_DIR = "data/fivethirtyeight"
 DEFAULT_MANIFESTS_DIR = "manifests"
 DEFAULT_RESULTS_DIR = "results"
 DEFAULT_FIGURES_DIR = "figures"
+# Paths with this prefix live on HDFS; anything else is a local path.
+HDFS_SCHEME = "hdfs://"
+ENV_HDFS_SCHEME = "LCD_HDFS_SCHEME"
+
+
+def is_hdfs_uri(path: str) -> bool:
+    return path.startswith(HDFS_SCHEME)
 
 
 def lcd_filename(station_id: str, year: int) -> str:

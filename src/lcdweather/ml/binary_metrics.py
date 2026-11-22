@@ -61,11 +61,3 @@ def curve_from_histogram(
 def point_at_threshold(curve: list[dict], threshold: float) -> dict:
     """The curve point whose threshold is closest to the requested one."""
     return min(curve, key=lambda point: abs(point["threshold"] - threshold))
-
-
-def best_f1_threshold(curve: list[dict]) -> float:
-    """Threshold maximising F1; falls back to the default when F1 is undefined."""
-    scored = [point for point in curve if point["f1"] is not None]
-    if not scored:
-        return DEFAULT_THRESHOLD
-    return max(scored, key=lambda point: point["f1"])["threshold"]

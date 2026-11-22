@@ -46,10 +46,10 @@ submit_job() {
 }
 
 fetch_results() {
-  case "${RESULTS_URI}" in
-    hdfs://*|gs://*|viewfs://*) ;;
-    *) echo "Results were written locally to ${RESULTS_URI}; nothing to fetch."; return 0 ;;
-  esac
+  if [[ "${RESULTS_URI}" != "${LCD_HDFS_SCHEME}"* ]]; then
+    echo "Results were written locally to ${RESULTS_URI}; nothing to fetch."
+    return 0
+  fi
   mkdir -p "${LOCAL_RESULTS}"
   local prefix dir name
   for prefix in "${RESULT_PREFIXES[@]}"; do

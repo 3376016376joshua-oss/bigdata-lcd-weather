@@ -1,8 +1,6 @@
 import pytest
 
 from lcdweather.ml.binary_metrics import (
-    DEFAULT_THRESHOLD,
-    best_f1_threshold,
     curve_from_histogram,
     derive_binary_metrics,
     point_at_threshold,
@@ -53,19 +51,3 @@ def test_curve_rates_are_monotonic_in_the_threshold():
     false_positive_rates = [point["fpr"] for point in curve]
     assert recalls == sorted(recalls, reverse=True)
     assert false_positive_rates == sorted(false_positive_rates, reverse=True)
-
-
-def test_best_f1_threshold_picks_the_separating_threshold():
-    histogram = {1: (0, 10), 8: (10, 10)}
-
-    curve = curve_from_histogram(histogram, n_bins=10)
-
-    best = point_at_threshold(curve, best_f1_threshold(curve))
-    assert best["f1"] == pytest.approx(1.0)
-    assert 0.2 <= best["threshold"] <= 0.8
-
-
-def test_best_f1_threshold_falls_back_when_there_are_no_positives():
-    curve = curve_from_histogram({0: (0, 3)}, n_bins=10)
-
-    assert best_f1_threshold(curve) == DEFAULT_THRESHOLD

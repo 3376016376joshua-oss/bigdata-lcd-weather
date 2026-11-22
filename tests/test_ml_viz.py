@@ -110,7 +110,6 @@ def test_classification_figures(tmp_path, monkeypatch):
             {
                 "model": model,
                 "split": "test",
-                "threshold_rule": rule,
                 "threshold": 0.5,
                 "auc_roc": 0.8,
                 "auc_pr": 0.6,
@@ -119,7 +118,6 @@ def test_classification_figures(tmp_path, monkeypatch):
                 "f1": 0.65,
             }
             for model in Q8_MODELS
-            for rule in ("default_0.5", "validation_f1")
         ],
     )
     _write(
@@ -144,8 +142,7 @@ def test_classification_figures(tmp_path, monkeypatch):
         [
             {
                 "model": model,
-                "threshold_rule": "validation_f1",
-                "threshold": 0.4,
+                "threshold": 0.5,
                 "actual": actual,
                 "predicted": predicted,
                 "count": count,

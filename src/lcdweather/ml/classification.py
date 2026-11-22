@@ -9,7 +9,6 @@ from pyspark.sql import functions as F
 
 from lcdweather.ml.binary_metrics import (
     DEFAULT_THRESHOLD,
-    best_f1_threshold,
     derive_binary_metrics,
     point_at_threshold,
 )
@@ -35,8 +34,6 @@ from lcdweather.ml.tuning import ModelSpec, TunedModel, append_model_output, tun
 TUNING_METRIC = "auc_roc"
 BASELINE_NAME = "persistence"
 POSITIVE_CLASS_INDEX = 1
-DEFAULT_RULE = "default_0.5"
-TUNED_RULE = "validation_f1"
 CURVE_COLUMNS = ("threshold", "fpr", "recall", "precision", "f1")
 LOGISTIC_GRIDS = {
     "full": [
@@ -88,13 +85,12 @@ def _score_columns(tuned: list[TunedModel]) -> dict[str, str]:
     return columns
 
 
-def _metric_row(model: str, split: str, rule: str, point: dict, areas: dict) -> dict:
+def _metric_row(model: str, split: str, point: dict, areas: dict) -> dict:
     counts = {key: point[key] for key in ("tp", "fp", "tn", "fn")}
     derived = {key: point[key] for key in ("precision", "recall", "f1", "accuracy")}
     return {
         "model": model,
         "split": split,
-        "threshold_rule": rule,
         "threshold": point["threshold"],
         **areas,
         **derived,
@@ -104,41 +100,35 @@ def _metric_row(model: str, split: str, rule: str, point: dict, areas: dict) -> 
 
 
 def _evaluate_model(model: str, column: str, validation: DataFrame, test: DataFrame) -> dict:
-    """Metrics at the default and validation-tuned thresholds, plus the test curve."""
-    curves = {
-        "validation": threshold_curve(validation, column),
-        "test": threshold_curve(test, column),
-    }
-    areas = {
-        "validation": area_under_curves(validation, column),
-        "test": area_under_curves(test, column),
-    }
-    tuned_threshold = best_f1_threshold(curves["validation"])
-    rules = ((DEFAULT_RULE, DEFAULT_THRESHOLD), (TUNED_RULE, tuned_threshold))
+    """Metrics at the 0.5 decision threshold on both splits, plus the test curve.
+
+    Rows without a score (the persistence baseline on days with unknown
+    precipitation) are left out of that model's metrics only.
+    """
+    splits = {"validation": validation, "test": test}
+    curves = {name: threshold_curve(frame, column) for name, frame in splits.items()}
     metrics = [
         _metric_row(
             model,
-            split,
-            rule,
-            point_at_threshold(curves[split], threshold),
-            areas[split],
+            name,
+            point_at_threshold(curves[name], DEFAULT_THRESHOLD),
+            area_under_curves(frame, column),
         )
-        for split in ("validation", "test")
-        for rule, threshold in rules
+        for name, frame in splits.items()
     ]
     curve = [
         {"model": model, **{name: point[name] for name in CURVE_COLUMNS}}
         for point in curves["test"]
     ]
     by_city = []
-    for counts in confusion_by_group(test, column, tuned_threshold, [CITY_KEY]):
+    for counts in confusion_by_group(test, column, DEFAULT_THRESHOLD, [CITY_KEY]):
         derived = derive_binary_metrics(counts["tp"], counts["fp"], counts["tn"], counts["fn"])
-        by_city.append({"model": model, "threshold": tuned_threshold, **counts, **derived})
+        by_city.append({"model": model, "threshold": DEFAULT_THRESHOLD, **counts, **derived})
     return {"metrics": metrics, "curve": curve, "by_city": by_city}
 
 
 def _confusion_rows(metric_rows: list[dict]) -> list[dict]:
-    """Long-format confusion matrix of the test split for every model and rule."""
+    """Long-format confusion matrix of the test split for every model."""
     cells = (
         ("wet", "wet", "tp"),
         ("dry", "wet", "fp"),
@@ -148,7 +138,6 @@ def _confusion_rows(metric_rows: list[dict]) -> list[dict]:
     return [
         {
             "model": row["model"],
-            "threshold_rule": row["threshold_rule"],
             "threshold": row["threshold"],
             "actual": actual,
             "predicted": predicted,

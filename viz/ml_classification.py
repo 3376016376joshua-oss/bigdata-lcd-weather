@@ -26,7 +26,6 @@ from ml_plotting import (
 
 TREE_MODEL = "random_forest"
 TOP_FEATURES = 15
-TUNED_RULE = "validation_f1"
 CLASSES = ("dry", "wet")
 METRIC_LABELS = {
     "auc_roc": "ROC AUC",
@@ -38,13 +37,10 @@ METRIC_LABELS = {
 LIGHT_TEXT_ABOVE_SHARE = 0.55
 
 
-def _tuned_test(metrics):
-    return metrics[(metrics["split"] == "test") & (metrics["threshold_rule"] == TUNED_RULE)]
-
-
 def plot_metrics(metrics):
     title = "Next-day measurable precipitation: test 2024-2025"
-    return model_metric_panels(_tuned_test(metrics).fillna(0.0), METRIC_LABELS, title)
+    test = metrics[metrics["split"] == "test"]
+    return model_metric_panels(test.fillna(0.0), METRIC_LABELS, title)
 
 
 def plot_curves(curve):
@@ -69,11 +65,10 @@ def plot_curves(curve):
 
 
 def plot_confusion(confusion):
-    tuned = confusion[confusion["threshold_rule"] == TUNED_RULE]
-    models = list(dict.fromkeys(tuned["model"]))
+    models = list(dict.fromkeys(confusion["model"]))
     figure, axes = plt.subplots(1, len(models), figsize=(3.2 * len(models), 3.3))
     for ax, model in zip(np.atleast_1d(axes), models):
-        rows = tuned[tuned["model"] == model]
+        rows = confusion[confusion["model"] == model]
         matrix = rows.pivot(index="actual", columns="predicted", values="count")
         matrix = matrix.reindex(index=CLASSES, columns=CLASSES).fillna(0)
         ax.imshow(matrix.to_numpy(), cmap=SEQUENTIAL_CMAP, vmin=0)

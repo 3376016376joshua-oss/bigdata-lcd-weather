@@ -5,7 +5,8 @@ import pytest
 
 pytest.importorskip("pyspark")
 
-from lcdweather.ml.export import export_result, export_results, is_remote  # noqa: E402
+from lcdweather.ml import export  # noqa: E402
+from lcdweather.ml.export import export_result, export_results  # noqa: E402
 
 ROWS = [
     {"model": "linear_regression", "rmse": 4.25, "note": None},
@@ -22,12 +23,6 @@ def _read(path):
         return list(csv.DictReader(handle))
 
 
-def test_only_filesystem_uris_are_remote():
-    assert is_remote("hdfs:///user/x/lcd/results")
-    assert not is_remote("results")
-    assert not is_remote("/tmp/results")
-
-
 def test_local_export_writes_one_csv_per_table(spark, tmp_path):
     frame = spark.createDataFrame([("KSEA", 1), ("KPHX", 2)], "city_code string, cluster int")
 
@@ -41,7 +36,9 @@ def test_local_export_writes_one_csv_per_table(spark, tmp_path):
     ]
 
 
-def test_remote_export_writes_a_single_part_file_with_one_header(spark, tmp_path):
+def test_hdfs_export_writes_a_single_part_file_with_one_header(spark, tmp_path, monkeypatch):
+    # No HDFS in the test environment: send the Spark writer to the local filesystem.
+    monkeypatch.setattr(export, "is_hdfs_uri", lambda path: True)
     results_uri = f"file://{tmp_path}"
 
     export_result(spark, ROWS, "q7_metrics", results_uri)

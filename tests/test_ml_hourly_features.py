@@ -67,6 +67,40 @@ def test_pressure_changes_look_back_3_12_and_24_hours(spark):
     assert summary["h24_pressure_change_24h"] == pytest.approx(-11.0)
 
 
+def test_pressure_changes_are_null_when_late_reports_are_missing(spark):
+    rows = [
+        _routine(0, 50.0, 1020.0),
+        _routine(11, 60.0, 1016.0),
+        _routine(20, 55.0, 1011.0),
+        _routine(22, 53.0, None),
+        _routine(23, 52.0, None),
+    ]
+
+    summary = _summary(spark, rows)
+
+    assert summary["h24_pressure_last"] == 1011.0
+    assert summary["h24_pressure_change_3h"] is None
+    assert summary["h24_pressure_change_12h"] == pytest.approx(-5.0)
+    assert summary["h24_pressure_change_24h"] == pytest.approx(-9.0)
+
+
+def test_morning_only_pressure_has_no_3h_or_12h_change(spark):
+    rows = [_routine(0, 50.0, 1020.0), _routine(11, 60.0, 1016.0)]
+
+    summary = _summary(spark, rows)
+
+    assert summary["h24_pressure_change_3h"] is None
+    assert summary["h24_pressure_change_12h"] is None
+    assert summary["h24_pressure_change_24h"] == pytest.approx(-4.0)
+
+
+def test_single_pressure_reading_has_no_24h_change(spark):
+    summary = _summary(spark, [_routine(23, 52.0, 1009.0)])
+
+    assert summary["h24_pressure_last"] == 1009.0
+    assert summary["h24_pressure_change_24h"] is None
+
+
 def test_last_reading_skips_missing_values(spark):
     rows = [
         _routine(21, 55.0, 1010.0),

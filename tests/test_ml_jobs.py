@@ -112,10 +112,8 @@ def test_classification_metrics_are_consistent(classification_results):
     metrics = _read(classification_results, "q8_metrics")
 
     assert {row["model"] for row in metrics} == MODELS_Q8
-    assert {row["threshold_rule"] for row in metrics} == {
-        "default_0.5",
-        "validation_f1",
-    }
+    assert {row["threshold"] for row in metrics} == {"0.5"}
+    assert {row["split"] for row in metrics} == {"validation", "test"}
     for row in metrics:
         counts = [int(row[key]) for key in ("tp", "fp", "tn", "fn")]
         assert sum(counts) == int(row["n"])
@@ -127,7 +125,7 @@ def test_classifiers_beat_persistence_on_the_synthetic_signal(classification_res
     test = {
         row["model"]: row
         for row in _read(classification_results, "q8_metrics")
-        if row["split"] == "test" and row["threshold_rule"] == "validation_f1"
+        if row["split"] == "test"
     }
 
     assert float(test["logistic_regression"]["auc_roc"]) > 0.8
@@ -142,7 +140,7 @@ def test_classification_side_tables(classification_results):
     by_city = _read(classification_results, "q8_metrics_by_city")
     importance = _read(classification_results, "q8_feature_importance")
 
-    assert len(confusion) == len(MODELS_Q8) * 2 * 4
+    assert len(confusion) == len(MODELS_Q8) * 4
     logistic = [row for row in curve if row["model"] == "logistic_regression"]
     assert len(logistic) == 101
     assert (float(logistic[0]["recall"]), float(logistic[0]["fpr"])) == (1.0, 1.0)

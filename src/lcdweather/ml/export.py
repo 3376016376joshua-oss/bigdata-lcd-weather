@@ -11,15 +11,11 @@ from typing import Any, Union
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 
-REMOTE_SCHEMES = ("hdfs://", "gs://", "s3a://", "viewfs://", "file://")
+from lcdweather.config import is_hdfs_uri
 
 ResultTable = Union[DataFrame, list[dict]]
 
 logger = logging.getLogger(__name__)
-
-
-def is_remote(results_dir: str) -> bool:
-    return results_dir.startswith(REMOTE_SCHEMES)
 
 
 def _cell(value: Any) -> str:
@@ -56,7 +52,7 @@ def export_result(spark: SparkSession, table: ResultTable, name: str, results_di
     if not is_frame and not table:
         logger.warning("Result %s is empty and was not exported", name)
         return
-    if is_remote(results_dir):
+    if is_hdfs_uri(results_dir):
         frame = table if is_frame else _rows_to_frame(spark, table)
         _export_remote(frame, f"{results_dir.rstrip('/')}/{name}")
         return

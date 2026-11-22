@@ -152,6 +152,33 @@ def test_trace_precipitation_is_not_a_wet_day(spark):
     ]
 
 
+def _daily_with_unknown_today(spark):
+    schema = (
+        "city_code string, city string, obs_date string, tmax_f double, tmin_f double, "
+        "tavg_f double, dep_f double, prcp_in double"
+    )
+    return spark.createDataFrame(
+        [
+            ("KAAA", "Alpha", "2020-03-01", None, 40.0, 45.0, 0.0, None),
+            ("KAAA", "Alpha", "2020-03-02", 55.0, 41.0, 46.0, 1.0, 0.2),
+        ],
+        schema,
+    ).withColumn("obs_date", F.to_date("obs_date"))
+
+
+def test_unknown_today_keeps_the_row_without_a_persistence_value(spark):
+    daily = _daily_with_unknown_today(spark)
+    hourly, _ = synthetic_tables(spark, SPEC)
+
+    regression = build_regression_dataset(daily, hourly.limit(0)).collect()
+    classification = build_classification_dataset(daily, hourly.limit(0)).collect()
+
+    assert [(row["obs_date"], row["label"]) for row in regression] == [(date(2020, 3, 1), 55.0)]
+    assert regression[0]["pred_persistence"] is None
+    assert [(row["obs_date"], row["label"]) for row in classification] == [(date(2020, 3, 1), 1.0)]
+    assert classification[0]["p_persistence"] is None
+
+
 def test_split_is_keyed_on_the_predicted_day(tables):
     hourly, daily = tables
     dataset = build_regression_dataset(daily, hourly)

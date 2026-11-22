@@ -21,12 +21,16 @@ def _routine(column: str) -> Column:
     return F.when(is_routine, F.col(column).cast("double"))
 
 
-def _reading(value: Column, condition: Column | None = None, latest: bool = True) -> Column:
-    """Latest (or earliest) non-null value of the day, optionally restricted."""
+def _pick(value: Column, condition: Column | None = None, latest: bool = True) -> Column:
+    """(ts, value) struct of the latest (or earliest) non-null value, optionally restricted."""
     keep = value.isNotNull() if condition is None else value.isNotNull() & condition
     tagged = F.when(keep, F.struct(F.col(TIMESTAMP_COL).alias("ts"), value.alias("value")))
-    picked = F.max(tagged) if latest else F.min(tagged)
-    return picked.getField("value")
+    return F.max(tagged) if latest else F.min(tagged)
+
+
+def _reading(value: Column, condition: Column | None = None) -> Column:
+    """Latest non-null value of the day, optionally restricted."""
+    return _pick(value, condition).getField("value")
 
 
 def _temperature_aggregates() -> list[Column]:
@@ -70,18 +74,25 @@ def _wind_aggregates() -> list[Column]:
 
 
 def _pressure_aggregates() -> list[Column]:
+    """Pressure changes are null unless the day's readings span the nominal window."""
     pressure = _routine("station_pressure_hpa")
     hour = F.hour(F.col(TIMESTAMP_COL))
-    last = _reading(pressure)
+    latest = _pick(pressure)
+    last = latest.getField("value")
+    last_hour = F.hour(latest.getField("ts"))
+    earliest = _pick(pressure, latest=False)
     three_hours_ago = _reading(pressure, hour <= LAST_HOUR_3H_BEFORE_DAY_END)
     twelve_hours_ago = _reading(pressure, hour <= LAST_HOUR_12H_BEFORE_DAY_END)
-    first = _reading(pressure, latest=False)
+    change_3h = F.when(last_hour > LAST_HOUR_3H_BEFORE_DAY_END, last - three_hours_ago)
+    change_12h = F.when(last_hour > LAST_HOUR_12H_BEFORE_DAY_END, last - twelve_hours_ago)
+    spans_day = latest.getField("ts") > earliest.getField("ts")
+    change_24h = F.when(spans_day, last - earliest.getField("value"))
     return [
         F.avg(pressure).alias("h24_pressure_mean"),
         last.alias("h24_pressure_last"),
-        (last - three_hours_ago).alias("h24_pressure_change_3h"),
-        (last - twelve_hours_ago).alias("h24_pressure_change_12h"),
-        (last - first).alias("h24_pressure_change_24h"),
+        change_3h.alias("h24_pressure_change_3h"),
+        change_12h.alias("h24_pressure_change_12h"),
+        change_24h.alias("h24_pressure_change_24h"),
     ]
 
 

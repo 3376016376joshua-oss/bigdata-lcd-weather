@@ -13,9 +13,31 @@ from lcdweather.timing.plan import YearWindow
 
 DEFAULT_SPARK_SUBMIT = "spark-submit"
 DEFAULT_TEMPLATES = {
-    "ingest": "{spark_submit} jobs/phase2_ingest.py --years {start}-{end}",
-    "analysis": "{spark_submit} jobs/phase4_analysis.py --years {start}-{end}",
+    "ingest": (
+        "{spark_submit} jobs/phase2_ingest.py --input {raw_root} --output {clean_dir}"
+        " --db {db} --years {start}-{end}"
+    ),
+    "analysis": "{spark_submit} jobs/phase4_analysis.py --db {db} --results-dir {results_dir}",
 }
+
+
+@dataclass(frozen=True)
+class JobTargets:
+    """Where the timed jobs read and write; each window gets its own scratch outputs."""
+
+    raw_root: str
+    clean_root: str
+    database_prefix: str
+    results_root: str
+
+    def for_window(self, window: YearWindow) -> dict[str, str]:
+        tag = f"{window.n_years}y"
+        return {
+            "raw_root": self.raw_root,
+            "clean_dir": f"{self.clean_root.rstrip('/')}/{tag}",
+            "db": f"{self.database_prefix}_t{tag}",
+            "results_dir": f"{self.results_root.rstrip('/')}/{tag}",
+        }
 
 
 @dataclass(frozen=True)
@@ -24,13 +46,17 @@ class TimedRun:
     exit_code: int
 
 
-def build_command(template: str, window: YearWindow, spark_submit: str) -> list[str]:
-    """Fill a command template; placeholders: {spark_submit} {start} {end} {n_years}."""
+def build_command(
+    template: str, window: YearWindow, spark_submit: str, targets: JobTargets
+) -> list[str]:
+    """Fill a command template; placeholders: {spark_submit} {start} {end} {n_years}
+    {raw_root} {clean_dir} {db} {results_dir}."""
     filled = template.format(
         spark_submit=spark_submit,
         start=window.start,
         end=window.end,
         n_years=window.n_years,
+        **targets.for_window(window),
     )
     command = shlex.split(filled)
     if not command:

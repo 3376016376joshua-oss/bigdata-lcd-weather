@@ -7,15 +7,29 @@ from lcdweather.timing.cli import main
 from lcdweather.timing.driver import Experiment, any_failed, run_experiment
 from lcdweather.timing.inputs import InputStats
 from lcdweather.timing.plan import YearWindow, year_windows
-from lcdweather.timing.runner import TimedRun, build_command, run_timed
+from lcdweather.timing.runner import (
+    DEFAULT_TEMPLATES,
+    JobTargets,
+    TimedRun,
+    build_command,
+    run_timed,
+)
 from lcdweather.timing.summary import loglog_slope, summarize
 
+TARGETS = JobTargets(
+    raw_root="hdfs:///lcd/raw",
+    clean_root="hdfs:///lcd/timing/clean/",
+    database_prefix="me_timing",
+    results_root="hdfs:///lcd/timing/results",
+)
 
-def test_build_command_substitutes_spark_submit_and_years():
+
+def test_default_ingest_command_writes_to_the_windows_scratch_zone_and_database():
     command = build_command(
-        "{spark_submit} jobs/phase2_ingest.py --years {start}-{end}",
+        DEFAULT_TEMPLATES["ingest"],
         YearWindow(2022, 2025),
         "spark-submit --master yarn --conf 'spark.app.name=lcd timing'",
+        TARGETS,
     )
 
     assert command == [
@@ -25,8 +39,29 @@ def test_build_command_substitutes_spark_submit_and_years():
         "--conf",
         "spark.app.name=lcd timing",
         "jobs/phase2_ingest.py",
+        "--input",
+        "hdfs:///lcd/raw",
+        "--output",
+        "hdfs:///lcd/timing/clean/4y",
+        "--db",
+        "me_timing_t4y",
         "--years",
         "2022-2025",
+    ]
+
+
+def test_default_analysis_command_reads_the_windows_database():
+    command = build_command(
+        DEFAULT_TEMPLATES["analysis"], YearWindow(2025, 2025), "spark-submit", TARGETS
+    )
+
+    assert command == [
+        "spark-submit",
+        "jobs/phase4_analysis.py",
+        "--db",
+        "me_timing_t1y",
+        "--results-dir",
+        "hdfs:///lcd/timing/results/1y",
     ]
 
 
@@ -53,6 +88,7 @@ def test_experiment_records_every_window_job_and_repeat():
             "analysis": "{spark_submit} analysis {n_years}",
         },
         spark_submit="submit",
+        targets=TARGETS,
         repeats=2,
     )
     executed = []
@@ -84,7 +120,9 @@ def test_experiment_records_every_window_job_and_repeat():
 
 
 def test_failed_runs_are_recorded_and_flagged():
-    experiment = Experiment(year_windows(sizes=[1]), {"ingest": "{spark_submit} x"}, "submit")
+    experiment = Experiment(
+        year_windows(sizes=[1]), {"ingest": "{spark_submit} x"}, "submit", TARGETS
+    )
 
     records = run_experiment(
         experiment,

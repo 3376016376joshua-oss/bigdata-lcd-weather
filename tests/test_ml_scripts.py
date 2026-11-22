@@ -126,7 +126,14 @@ def test_phase6_times_both_jobs_on_hdfs_input(cluster):
         ("4000", "8"),
     ]
     submitted = [line for line in log.read_text().splitlines() if not line.startswith("hdfs")]
-    assert submitted[0].endswith("jobs/phase2_ingest.py --years 2025-2025")
-    assert submitted[-1].endswith("jobs/phase4_analysis.py --years 2022-2025")
+    root = "hdfs:///user/tester_nyu_edu/lcd"
+    assert submitted[0].endswith(
+        f"jobs/phase2_ingest.py --input {root}/raw --output {root}/timing/clean/1y"
+        " --db tester_nyu_edu_timing_t1y --years 2025-2025"
+    )
+    assert submitted[-1].endswith(
+        "jobs/phase4_analysis.py --db tester_nyu_edu_timing_t4y"
+        f" --results-dir {root}/timing/results/4y"
+    )
     assert "hdfs dfs -du hdfs:///user/tester_nyu_edu/lcd/raw/*/LCD_*_2025.csv" in log.read_text()
     assert (results / "runtime_scaling_summary.csv").exists()

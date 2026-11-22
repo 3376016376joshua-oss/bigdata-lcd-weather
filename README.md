@@ -345,7 +345,9 @@ and draw every figure.
 ### Phase 4 - Machine learning with Spark MLlib (questions 7-8)
 
 This is Phase 5 of the proposal, so the jobs are named `jobs/phase5_*.py`. They read the
-cleaned Hive tables `lcd_hourly` and `lcd_daily` and need Phase 2 to have run.
+cleaned Hive tables `lcd_hourly` and `lcd_daily`, whose columns (`obs_ts`, `report_type`,
+`temp_f`, `station_pressure_hpa`, `tmax_f`, `prcp_in`, ...) are the shared contract with the
+Phase 2-3 ingestion PR. That PR must be merged and Phase 2 run before these jobs.
 
 ```bash
 # Submit the three jobs to YARN, then merge their result CSVs from HDFS into results/.
@@ -386,9 +388,10 @@ How the models are built (`src/lcdweather/ml/`):
 - **Pipeline.** Median imputer, one-hot city and month, `VectorAssembler`, `StandardScaler`,
   then the estimator. Imputer and scaler are fitted on the training rows only.
 - **Tuning.** Each grid point is fitted on train and scored on validation (RMSE, ROC AUC);
-  the best one is refitted on train + validation and scored once on test. For
-  classification the decision threshold with the best validation F1 is reported next to the
-  default 0.5.
+  the best one is refitted on train + validation and scored once on test. Classification
+  metrics use a 0.5 decision threshold.
+- **Baselines.** The persistence baseline (tomorrow = today) is scored only on days whose
+  own value is known; those days are never dropped from the models' data.
 
 Figures (need pandas and matplotlib; they read `results/*.csv` and write `figures/*.png`):
 
@@ -433,9 +436,11 @@ done
 
 ### Phase 6 - Run-time scaling
 
-Times the Phase 2 ingestion job and the analysis job on 1, 4, 8 and 16 years of input
-(2025, 2022-2025, 2018-2025, 2010-2025) and records wall-clock time against the raw input
-size.
+Times the Phase 2 ingestion job (`jobs/phase2_ingest.py`) and the Phase 4 analysis job
+(`jobs/phase4_analysis.py`) on 1, 4, 8 and 16 years of input (2025, 2022-2025, 2018-2025,
+2010-2025) and records wall-clock time against the raw input size. Both jobs come from the
+Phase 2-3 and Phase 4 PRs, which must be merged first; the raw zone must hold Phase 1's
+uploads.
 
 ```bash
 bash scripts/run_phase6_timing.sh                              # both jobs, four sizes
@@ -449,11 +454,16 @@ python3 viz/timing_scaling.py                                  # figures/timing_
 - `results/runtime_scaling_summary.csv`: per job and size the median time, seconds per GB,
   input and time ratios against the 1-year run, and the slope of log(time) on log(bytes).
   A slope of 1 is linear growth; below 1 means fixed start-up cost dominates.
-- The jobs are launched as `{spark_submit} jobs/phase2_ingest.py --years {start}-{end}` and
-  `{spark_submit} jobs/phase4_analysis.py --years {start}-{end}`. If a job has another path
-  or flags, pass `--ingest-command` or `--analysis-command` with the same placeholders.
-- Sizes run smallest first, so the last run rebuilds the full 2010-2025 tables and results.
-  A failed job is recorded with its exit code and the script exits with status 1.
+- Each window writes to scratch outputs, never the production cleaned zone or database:
+  `phase2_ingest.py --input <raw zone> --output <clean-root>/<n>y --db <db-prefix>_t<n>y
+  --years <start>-<end>`, then `phase4_analysis.py --db <db-prefix>_t<n>y --results-dir
+  <analysis-results-root>/<n>y`. The defaults are `<LCD_HDFS_ROOT>/timing/clean`,
+  `<LCD_HIVE_DB>_timing` and `<LCD_HDFS_ROOT>/timing/results`; change them with
+  `--clean-root`, `--db-prefix` and `--analysis-results-root`.
+- `--jobs analysis` alone reuses the `<db-prefix>_t<n>y` databases of an earlier ingest run.
+  `--ingest-command` and `--analysis-command` replace the templates; placeholders are
+  `{spark_submit} {start} {end} {n_years} {raw_root} {clean_dir} {db} {results_dir}`.
+- A failed job is recorded with its exit code and the script exits with status 1.
 
 ## Local development (optional)
 

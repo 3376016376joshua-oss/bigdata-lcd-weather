@@ -29,11 +29,7 @@ def year_windows(
     first_year: int = DEFAULT_FIRST_YEAR,
     last_year: int = DEFAULT_LAST_YEAR,
 ) -> list[YearWindow]:
-    """Windows ending at `last_year`, smallest first.
-
-    Running the largest window last leaves the tables and results of the full
-    period in place once the experiment finishes.
-    """
+    """Windows ending at `last_year`, smallest first."""
     available = last_year - first_year + 1
     windows = []
     for size in sorted(set(sizes)):

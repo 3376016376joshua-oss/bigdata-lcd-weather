@@ -5,10 +5,10 @@
 #   bash scripts/run_phase6_timing.sh                      # both jobs, all four sizes
 #   bash scripts/run_phase6_timing.sh --jobs analysis --repeats 3
 #
-# The windows run smallest first, so the last run rebuilds the full 2010-2025
-# tables and results. Override the job commands if their paths or flags differ:
-#   bash scripts/run_phase6_timing.sh \
-#     --ingest-command "{spark_submit} jobs/phase2_ingest.py --years {start}-{end}"
+# Each window ingests into its own scratch cleaned zone (<LCD_HDFS_ROOT>/timing/clean/<n>y)
+# and Hive database (<LCD_HIVE_DB>_timing_t<n>y), then analyses that database, so the
+# production zone and database are never touched. Needs jobs/phase2_ingest.py and
+# jobs/phase4_analysis.py (the Phase 2-3 and Phase 4 PRs) and Phase 1's raw zone.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

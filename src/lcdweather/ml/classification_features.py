@@ -65,6 +65,6 @@ def build_classification_dataset(daily: DataFrame, hourly: DataFrame) -> DataFra
     )
     joined = days.join(summarize_hourly(hourly), [CITY_KEY, DATE_COL], "left")
     numeric = [F.col(name).cast("double").alias(name) for name in CLASSIFICATION_FEATURES.numeric]
-    return joined.where(F.col(LABEL_COL).isNotNull() & F.col(PERSISTENCE_COL).isNotNull()).select(
+    return joined.where(F.col(LABEL_COL).isNotNull()).select(
         *KEY_COLUMNS, "month", LABEL_COL, PERSISTENCE_COL, *numeric
     )
