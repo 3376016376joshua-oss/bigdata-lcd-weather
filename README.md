@@ -148,8 +148,8 @@ header, or a file has malformed rows or rows of another station. Missing days ar
 - 162 files, 1,411,774,781 bytes, 2,046,011 rows; every file has the identical 125-column
   header and no malformed row.
 - Rows by report type: FM-15 1,425,274; FM-16 313,797; FM-12 240,346; SOD 59,169; SOM 1,944;
-  and three rare types to drop or fold in during cleaning: SY-MT 5,339 (almost all
-  Jacksonville), AUTO 113, blank 29.
+  and three rare types: SY-MT 5,339 (almost all Jacksonville), AUTO 113, blank 29. Phase 2
+  keeps SY-MT and AUTO in `lcd_hourly` and drops the blank rows.
 - Los Angeles Downtown/USC has no hourly reports on 225 days of 2024 and on every day of 2025
   (its 2025 file holds daily and monthly summaries only), which is why the airport station
   replaces it.
