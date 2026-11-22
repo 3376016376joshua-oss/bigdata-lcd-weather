@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class Experiment:
     windows: Sequence[YearWindow]
-    # Job name -> command template, run in this order for every window.
-    templates: dict[str, str]
+    # Job names, run in this order for every window.
+    jobs: Sequence[str]
     spark_submit: str
     targets: JobTargets
     repeats: int = 1
@@ -34,8 +34,8 @@ def run_experiment(
     records = []
     for window in experiment.windows:
         stats = measure(window)
-        for job, template in experiment.templates.items():
-            command = build_command(template, window, experiment.spark_submit, experiment.targets)
+        for job in experiment.jobs:
+            command = build_command(job, window, experiment.spark_submit, experiment.targets)
             for repeat in range(1, experiment.repeats + 1):
                 logger.info("Timing %s on %s years (run %s)", job, window.n_years, repeat)
                 timed = run(command)

@@ -10,11 +10,13 @@ from lcdweather.ml.classification_features import (  # noqa: E402
     CLASSIFICATION_FEATURES,
     build_classification_dataset,
 )
+from lcdweather.ml.hourly_features import summarize_hourly  # noqa: E402
 from lcdweather.ml.regression_features import (  # noqa: E402
     REGRESSION_FEATURES,
     build_regression_dataset,
 )
 from lcdweather.ml.settings import SplitYears  # noqa: E402
+from lcdweather.ml.sources import primary_station_tables  # noqa: E402
 from lcdweather.ml.splits import split_by_target_year  # noqa: E402
 from lcdweather.ml.synthetic import synthetic_tables  # noqa: E402
 from lcdweather.ml.synthetic_weather import SyntheticCity, SyntheticSpec  # noqa: E402
@@ -177,6 +179,98 @@ def test_unknown_today_keeps_the_row_without_a_persistence_value(spark):
     assert regression[0]["pred_persistence"] is None
     assert [(row["obs_date"], row["label"]) for row in classification] == [(date(2020, 3, 1), 1.0)]
     assert classification[0]["p_persistence"] is None
+
+
+def _two_los_angeles_stations(spark):
+    """Downtown (not primary) and airport (primary) report for KCQT on the same days."""
+    daily_schema = (
+        "city_code string, city string, obs_date string, tmax_f double, tmin_f double, "
+        "tavg_f double, dep_f double, prcp_in double, is_primary_station boolean"
+    )
+    daily = spark.createDataFrame(
+        [
+            ("KCQT", "Los Angeles", "2024-03-01", 90.0, 60.0, 75.0, 9.0, 0.5, False),
+            ("KCQT", "Los Angeles", "2024-03-02", 95.0, 61.0, 78.0, 9.0, 0.5, False),
+            ("KCQT", "Los Angeles", "2024-03-01", 70.0, 50.0, 60.0, 1.0, 0.0, True),
+            ("KCQT", "Los Angeles", "2024-03-02", 72.0, 52.0, 62.0, 1.0, 0.0, True),
+        ],
+        daily_schema,
+    ).withColumn("obs_date", F.to_date("obs_date"))
+    hourly_schema = (
+        "city_code string, obs_ts string, report_type string, temp_f double, dewpt_f double, "
+        "rh_pct double, wind_speed_mph double, wind_gust_mph double, "
+        "station_pressure_hpa double, sky_cover_okta int, precip_in double, "
+        "is_special boolean, is_primary_station boolean"
+    )
+    hourly = (
+        spark.createDataFrame(
+            [
+                (
+                    "KCQT",
+                    "2024-03-01 00:47:00",
+                    "FM-15",
+                    80.0,
+                    50.0,
+                    30.0,
+                    5.0,
+                    None,
+                    990.0,
+                    2,
+                    0.3,
+                    False,
+                    False,
+                ),
+                (
+                    "KCQT",
+                    "2024-03-01 00:53:00",
+                    "FM-15",
+                    60.0,
+                    50.0,
+                    70.0,
+                    5.0,
+                    None,
+                    1015.0,
+                    2,
+                    0.0,
+                    False,
+                    True,
+                ),
+                (
+                    "KCQT",
+                    "2024-03-01 23:53:00",
+                    "FM-15",
+                    58.0,
+                    50.0,
+                    75.0,
+                    5.0,
+                    None,
+                    1013.0,
+                    2,
+                    0.0,
+                    False,
+                    True,
+                ),
+            ],
+            hourly_schema,
+        )
+        .withColumn("obs_ts", F.to_timestamp("obs_ts"))
+        .withColumn("obs_date", F.to_date("obs_ts"))
+    )
+    return primary_station_tables(hourly, daily)
+
+
+def test_only_the_primary_station_reaches_features_and_labels(spark):
+    tables = _two_los_angeles_stations(spark)
+
+    regression = build_regression_dataset(tables.daily, tables.hourly).collect()
+    classification = build_classification_dataset(tables.daily, tables.hourly).collect()
+    hourly = summarize_hourly(tables.hourly).first()
+
+    assert [(row["tmax_f"], row["label"]) for row in regression] == [(70.0, 72.0)]
+    assert [row["label"] for row in classification] == [0.0]
+    assert hourly["h24_temp_mean"] == pytest.approx(59.0)
+    assert hourly["h24_precip_sum"] == 0.0
+    assert hourly["h24_pressure_change_24h"] == pytest.approx(-2.0)
 
 
 def test_split_is_keyed_on_the_predicted_day(tables):

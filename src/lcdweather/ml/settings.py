@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 HOURLY_TABLE = "lcd_hourly"
 DAILY_TABLE = "lcd_daily"
+# Phase 2 flags the station meant for each city and year (Los Angeles has two).
+PRIMARY_STATION_COL = "is_primary_station"
 
 ROUTINE_REPORT_TYPE = "FM-15"
 WET_DAY_THRESHOLD_IN = 0.01

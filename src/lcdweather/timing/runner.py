@@ -12,7 +12,7 @@ from typing import Callable
 from lcdweather.timing.plan import YearWindow
 
 DEFAULT_SPARK_SUBMIT = "spark-submit"
-DEFAULT_TEMPLATES = {
+JOB_TEMPLATES = {
     "ingest": (
         "{spark_submit} jobs/phase2_ingest.py --input {raw_root} --output {clean_dir}"
         " --db {db} --years {start}-{end}"
@@ -47,21 +47,16 @@ class TimedRun:
 
 
 def build_command(
-    template: str, window: YearWindow, spark_submit: str, targets: JobTargets
+    job: str, window: YearWindow, spark_submit: str, targets: JobTargets
 ) -> list[str]:
-    """Fill a command template; placeholders: {spark_submit} {start} {end} {n_years}
-    {raw_root} {clean_dir} {db} {results_dir}."""
-    filled = template.format(
+    """The spark-submit command of one job (`ingest` or `analysis`) on one window."""
+    filled = JOB_TEMPLATES[job].format(
         spark_submit=spark_submit,
         start=window.start,
         end=window.end,
-        n_years=window.n_years,
         **targets.for_window(window),
     )
-    command = shlex.split(filled)
-    if not command:
-        raise ValueError("Command template produced an empty command")
-    return command
+    return shlex.split(filled)
 
 
 def _exit_code(command: Sequence[str]) -> int:

@@ -7,8 +7,7 @@
 #
 # Each window ingests into its own scratch cleaned zone (<LCD_HDFS_ROOT>/timing/clean/<n>y)
 # and Hive database (<LCD_HIVE_DB>_timing_t<n>y), then analyses that database, so the
-# production zone and database are never touched. Needs jobs/phase2_ingest.py and
-# jobs/phase4_analysis.py (the Phase 2-3 and Phase 4 PRs) and Phase 1's raw zone.
+# production zone and database are never touched. Needs Phase 1's raw zone.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

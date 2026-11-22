@@ -14,18 +14,17 @@ from lcdweather.timing.plan import DEFAULT_SIZES, year_windows
 from lcdweather.timing.report import RUN_COLUMNS, SUMMARY_COLUMNS, write_csv
 from lcdweather.timing.runner import (
     DEFAULT_SPARK_SUBMIT,
-    DEFAULT_TEMPLATES,
+    JOB_TEMPLATES,
     JobTargets,
     run_timed,
 )
 from lcdweather.timing.summary import summarize
 
 SPARK_SUBMIT_ENV = "SPARK_SUBMIT"
-JOB_CHOICES = tuple(DEFAULT_TEMPLATES)
+JOB_CHOICES = tuple(JOB_TEMPLATES)
 FAILURE_EXIT_CODE = 1
 TIMING_ZONE = "timing"
 TIMING_DB_SUFFIX = "_timing"
-PLACEHOLDERS = "{spark_submit} {start} {end} {n_years} {raw_root} {clean_dir} {db} {results_dir}"
 
 
 def _add_target_arguments(parser: argparse.ArgumentParser, settings: Settings) -> None:
@@ -61,14 +60,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--spark-submit",
         default=os.environ.get(SPARK_SUBMIT_ENV, DEFAULT_SPARK_SUBMIT),
-        help="spark-submit command with its options, substituted for {spark_submit}",
+        help="spark-submit command with its options, used to launch both jobs",
     )
-    parser.add_argument(
-        "--ingest-command",
-        default=DEFAULT_TEMPLATES["ingest"],
-        help=f"template; placeholders {PLACEHOLDERS}",
-    )
-    parser.add_argument("--analysis-command", default=DEFAULT_TEMPLATES["analysis"])
     parser.add_argument("--skip-row-count", action="store_true")
     parser.add_argument(
         "--output", default=os.path.join(settings.results_dir, "runtime_scaling.csv")
@@ -83,10 +76,9 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     args = build_parser().parse_args(argv)
-    templates = {"ingest": args.ingest_command, "analysis": args.analysis_command}
     experiment = Experiment(
         windows=year_windows(args.sizes, args.first_year, args.last_year),
-        templates={job: templates[job] for job in JOB_CHOICES if job in args.jobs},
+        jobs=[job for job in JOB_CHOICES if job in args.jobs],
         spark_submit=args.spark_submit,
         targets=JobTargets(
             raw_root=args.raw_root,

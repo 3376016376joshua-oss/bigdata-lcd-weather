@@ -8,7 +8,6 @@ from lcdweather.timing.driver import Experiment, any_failed, run_experiment
 from lcdweather.timing.inputs import InputStats
 from lcdweather.timing.plan import YearWindow, year_windows
 from lcdweather.timing.runner import (
-    DEFAULT_TEMPLATES,
     JobTargets,
     TimedRun,
     build_command,
@@ -26,7 +25,7 @@ TARGETS = JobTargets(
 
 def test_default_ingest_command_writes_to_the_windows_scratch_zone_and_database():
     command = build_command(
-        DEFAULT_TEMPLATES["ingest"],
+        "ingest",
         YearWindow(2022, 2025),
         "spark-submit --master yarn --conf 'spark.app.name=lcd timing'",
         TARGETS,
@@ -51,9 +50,7 @@ def test_default_ingest_command_writes_to_the_windows_scratch_zone_and_database(
 
 
 def test_default_analysis_command_reads_the_windows_database():
-    command = build_command(
-        DEFAULT_TEMPLATES["analysis"], YearWindow(2025, 2025), "spark-submit", TARGETS
-    )
+    command = build_command("analysis", YearWindow(2025, 2025), "spark-submit", TARGETS)
 
     assert command == [
         "spark-submit",
@@ -83,10 +80,7 @@ def test_run_timed_executes_a_real_command():
 def test_experiment_records_every_window_job_and_repeat():
     experiment = Experiment(
         windows=year_windows(sizes=[1, 4]),
-        templates={
-            "ingest": "{spark_submit} ingest {start}-{end}",
-            "analysis": "{spark_submit} analysis {n_years}",
-        },
+        jobs=["ingest", "analysis"],
         spark_submit="submit",
         targets=TARGETS,
         repeats=2,
@@ -106,8 +100,9 @@ def test_experiment_records_every_window_job_and_repeat():
     )
 
     assert len(records) == 2 * 2 * 2
-    assert executed[0] == ["submit", "ingest", "2025-2025"]
-    assert executed[-1] == ["submit", "analysis", "4"]
+    assert executed[0][:2] == ["submit", "jobs/phase2_ingest.py"]
+    assert executed[0][-2:] == ["--years", "2025-2025"]
+    assert executed[-1][:4] == ["submit", "jobs/phase4_analysis.py", "--db", "me_timing_t4y"]
     first = records[0]
     assert (first["job"], first["n_years"], first["repeat"]) == ("ingest", 1, 1)
     assert (first["input_files"], first["input_bytes"], first["input_rows"]) == (
@@ -115,14 +110,12 @@ def test_experiment_records_every_window_job_and_repeat():
         100,
         None,
     )
-    assert first["command"] == "submit ingest 2025-2025"
+    assert first["command"].startswith("submit jobs/phase2_ingest.py ")
     assert not any_failed(records)
 
 
 def test_failed_runs_are_recorded_and_flagged():
-    experiment = Experiment(
-        year_windows(sizes=[1]), {"ingest": "{spark_submit} x"}, "submit", TARGETS
-    )
+    experiment = Experiment(year_windows(sizes=[1]), ["ingest"], "submit", TARGETS)
 
     records = run_experiment(
         experiment,
@@ -181,11 +174,7 @@ def test_cli_times_commands_and_writes_both_csvs(tmp_path):
             "--raw-root",
             str(tmp_path / "raw"),
             "--spark-submit",
-            sys.executable,
-            "--ingest-command",
-            "{spark_submit} -c pass",
-            "--analysis-command",
-            "{spark_submit} -c 'raise SystemExit(0)'",
+            f"{sys.executable} -c pass",
             "--output",
             str(output),
             "--summary-output",
@@ -218,9 +207,7 @@ def test_cli_exits_nonzero_when_a_job_fails(tmp_path):
             "--raw-root",
             str(tmp_path),
             "--spark-submit",
-            sys.executable,
-            "--ingest-command",
-            "{spark_submit} -c 'raise SystemExit(5)'",
+            f"{sys.executable} -c 'raise SystemExit(5)'",
             "--output",
             str(tmp_path / "runs.csv"),
             "--summary-output",

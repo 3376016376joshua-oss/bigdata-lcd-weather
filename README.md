@@ -346,8 +346,9 @@ and draw every figure.
 
 This is Phase 5 of the proposal, so the jobs are named `jobs/phase5_*.py`. They read the
 cleaned Hive tables `lcd_hourly` and `lcd_daily`, whose columns (`obs_ts`, `report_type`,
-`temp_f`, `station_pressure_hpa`, `tmax_f`, `prcp_in`, ...) are the shared contract with the
-Phase 2-3 ingestion PR. That PR must be merged and Phase 2 run before these jobs.
+`temp_f`, `station_pressure_hpa`, `tmax_f`, `prcp_in`, ...) come from Phase 2, so Phase 2
+must have been run first. Only rows with `is_primary_station` are used, so Los Angeles has
+one station per day.
 
 ```bash
 # Submit the three jobs to YARN, then merge their result CSVs from HDFS into results/.
@@ -438,9 +439,8 @@ done
 
 Times the Phase 2 ingestion job (`jobs/phase2_ingest.py`) and the Phase 4 analysis job
 (`jobs/phase4_analysis.py`) on 1, 4, 8 and 16 years of input (2025, 2022-2025, 2018-2025,
-2010-2025) and records wall-clock time against the raw input size. Both jobs come from the
-Phase 2-3 and Phase 4 PRs, which must be merged first; the raw zone must hold Phase 1's
-uploads.
+2010-2025) and records wall-clock time against the raw input size. The raw zone must hold
+Phase 1's uploads.
 
 ```bash
 bash scripts/run_phase6_timing.sh                              # both jobs, four sizes
@@ -461,8 +461,6 @@ python3 viz/timing_scaling.py                                  # figures/timing_
   `<LCD_HIVE_DB>_timing` and `<LCD_HDFS_ROOT>/timing/results`; change them with
   `--clean-root`, `--db-prefix` and `--analysis-results-root`.
 - `--jobs analysis` alone reuses the `<db-prefix>_t<n>y` databases of an earlier ingest run.
-  `--ingest-command` and `--analysis-command` replace the templates; placeholders are
-  `{spark_submit} {start} {end} {n_years} {raw_root} {clean_dir} {db} {results_dir}`.
 - A failed job is recorded with its exit code and the script exits with status 1.
 
 ## Local development (optional)

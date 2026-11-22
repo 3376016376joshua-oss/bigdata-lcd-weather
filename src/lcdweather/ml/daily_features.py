@@ -19,11 +19,7 @@ FORECAST_HORIZON_DAYS = 1
 
 
 def dedupe_daily(daily: DataFrame) -> DataFrame:
-    """One row per city-day.
-
-    Los Angeles is served by two stations sharing one city code, so any
-    overlapping dates are averaged instead of being counted twice.
-    """
+    """One row per city-day (a guard; the tables hold one primary station per city-day)."""
     values = [F.avg(F.col(name).cast("double")).alias(name) for name in DAILY_VALUE_COLUMNS]
     return daily.groupBy(CITY_KEY, DATE_COL).agg(F.min("city").alias("city"), *values)
 
