@@ -7,9 +7,9 @@ import logging
 from typing import Callable
 
 from lcdweather.config import load_settings
+from lcdweather.ingest.contract import DAILY_TABLE, HOURLY_TABLE
 from lcdweather.ml.export import ResultTable, export_results
 from lcdweather.ml.session import build_session
-from lcdweather.ml.settings import DAILY_TABLE, HOURLY_TABLE
 from lcdweather.ml.sources import WeatherTables, load_hive_tables, load_synthetic_tables
 
 GRID_CHOICES = ("full", "quick")

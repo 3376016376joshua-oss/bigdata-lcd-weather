@@ -8,20 +8,14 @@
 # Each window ingests into its own scratch cleaned zone (<LCD_HDFS_ROOT>/timing/clean/<n>y)
 # and Hive database (<LCD_HIVE_DB>_timing_t<n>y), then analyses that database, so the
 # production zone and database are never touched. Needs Phase 1's raw zone.
+# The jobs run with LCD_SPARK_SUBMIT_OPTS, the same spark-submit flags as run_phase2.sh.
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# shellcheck source=scripts/env.sh
-source "${REPO_ROOT}/scripts/env.sh"
-SPARK_SUBMIT="${SPARK_SUBMIT:-spark-submit}"
-SPARK_SUBMIT_ARGS="${SPARK_SUBMIT_ARGS:---master yarn --deploy-mode client}"
-PACKAGE_ZIP="${REPO_ROOT}/dist/lcdweather.zip"
+# shellcheck source=scripts/phase_common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/phase_common.sh"
+cd "$REPO_ROOT"
 
-mkdir -p "$(dirname "${PACKAGE_ZIP}")"
-rm -f "${PACKAGE_ZIP}"
-(cd "${REPO_ROOT}/src" && python3 -m zipfile -c "${PACKAGE_ZIP}" lcdweather)
-
-cd "${REPO_ROOT}"
-PYTHONPATH="${REPO_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}" python3 jobs/phase6_timing.py \
-  --spark-submit "${SPARK_SUBMIT} ${SPARK_SUBMIT_ARGS} --py-files ${PACKAGE_ZIP}" \
+build_package_zip
+PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:${PYTHONPATH}}" python3 jobs/phase6_timing.py \
+  --spark-submit "spark-submit ${LCD_SPARK_SUBMIT_OPTS} --py-files ${PACKAGE_ZIP}" \
   "$@"

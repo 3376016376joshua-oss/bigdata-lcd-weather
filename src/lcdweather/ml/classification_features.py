@@ -5,6 +5,7 @@ from __future__ import annotations
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
+from lcdweather.ingest.contract import MEASURABLE_PRECIPITATION_IN
 from lcdweather.ml.daily_features import (
     CITY_KEY,
     DATE_COL,
@@ -14,7 +15,7 @@ from lcdweather.ml.daily_features import (
 )
 from lcdweather.ml.feature_names import FeatureSet
 from lcdweather.ml.hourly_features import summarize_hourly
-from lcdweather.ml.settings import LABEL_COL, WET_DAY_THRESHOLD_IN
+from lcdweather.ml.settings import LABEL_COL
 from lcdweather.ml.splits import TARGET_DATE_COL
 
 PERSISTENCE_COL = "p_persistence"
@@ -52,7 +53,7 @@ CLASSIFICATION_FEATURES = FeatureSet(
 
 def _is_wet(precipitation):
     """1.0 for measurable precipitation, 0.0 otherwise, null when unknown."""
-    wet = (precipitation >= WET_DAY_THRESHOLD_IN).cast("double")
+    wet = (precipitation >= MEASURABLE_PRECIPITATION_IN).cast("double")
     return F.when(precipitation.isNotNull(), wet)
 
 

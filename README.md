@@ -359,11 +359,12 @@ bash scripts/run_phase5.sh fetch       # only download the results again
 ```
 
 The script zips `src/lcdweather` for `--py-files`, so nothing is installed on the cluster.
-`SPARK_SUBMIT_ARGS` (default `--master yarn --deploy-mode client`), `PHASE5_JOB_ARGS` (extra
-flags for every job) and `PHASE5_GRID` (`full`, or `quick` for a one-point grid) adjust the run. One job by hand:
+`LCD_SPARK_SUBMIT_OPTS` (extra spark-submit flags, shared with `run_phase2.sh`; default
+none, so the cluster defaults apply), `PHASE5_JOB_ARGS` (extra flags for every job) and `PHASE5_GRID` (`full`, or `quick` for a one-point grid) adjust the run. One job by hand:
 
 ```bash
-spark-submit --master yarn --py-files dist/lcdweather.zip jobs/phase5_regression.py \
+(cd src && python3 -m zipfile -c ../lcdweather.zip lcdweather)
+spark-submit --py-files lcdweather.zip jobs/phase5_regression.py \
   --database "${LCD_NETID}_nyu_edu" --results-dir "hdfs:///user/${LCD_NETID}_nyu_edu/lcd/results"
 ```
 
@@ -405,7 +406,7 @@ python3 viz/ml_kmeans.py           # ml_kmeans_*: silhouette, monthly profiles, 
 A smoke run without Hive, on small generated tables (locally or on the cluster):
 
 ```bash
-SPARK_SUBMIT_ARGS="--master local[2]" PHASE5_JOB_ARGS="--synthetic" PHASE5_GRID=quick \
+LCD_SPARK_SUBMIT_OPTS="--master local[2]" PHASE5_JOB_ARGS="--synthetic" PHASE5_GRID=quick \
   LCD_RESULTS_URI=results bash scripts/run_phase5.sh
 ```
 

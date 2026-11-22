@@ -5,8 +5,8 @@ from __future__ import annotations
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
+from lcdweather.ingest.contract import REPORT_ROUTINE
 from lcdweather.ml.daily_features import CITY_KEY, DATE_COL, dedupe_daily
-from lcdweather.ml.settings import ROUTINE_REPORT_TYPE
 
 MONTHS = tuple(range(1, 13))
 TEMPERATURE_COLUMNS = tuple(f"temp_m{month:02d}" for month in MONTHS)
@@ -43,7 +43,7 @@ def daily_shape(days: DataFrame) -> DataFrame:
 
 def hourly_shape(hourly: DataFrame) -> DataFrame:
     """Amplitude of the mean hour-of-day temperature curve, and mean humidity."""
-    routine = hourly.where(F.col("report_type") == ROUTINE_REPORT_TYPE)
+    routine = hourly.where(F.col("report_type") == REPORT_ROUTINE)
     by_hour = routine.groupBy(CITY_KEY, F.hour("obs_ts").alias("hour")).agg(
         F.avg("temp_f").alias("mean_temp_f")
     )

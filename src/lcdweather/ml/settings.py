@@ -1,16 +1,9 @@
-"""Constants and environment-driven defaults for the Phase 5 jobs."""
+"""Modelling constants of the Phase 5 jobs; table and column names live in ingest.contract."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-HOURLY_TABLE = "lcd_hourly"
-DAILY_TABLE = "lcd_daily"
-# Phase 2 flags the station meant for each city and year (Los Angeles has two).
-PRIMARY_STATION_COL = "is_primary_station"
-
-ROUTINE_REPORT_TYPE = "FM-15"
-WET_DAY_THRESHOLD_IN = 0.01
 RANDOM_SEED = 42
 LABEL_COL = "label"
 # The modelling tables are tiny (about 58k city-days); a few partitions avoid

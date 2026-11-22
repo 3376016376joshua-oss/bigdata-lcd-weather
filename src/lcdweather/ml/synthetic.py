@@ -5,7 +5,7 @@ from __future__ import annotations
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
-from lcdweather.ml.settings import PRIMARY_STATION_COL
+from lcdweather.ingest.contract import PRIMARY_STATION_COLUMN
 from lcdweather.ml.synthetic_weather import SyntheticCity, SyntheticSpec, generate_rows
 
 HOURLY_SCHEMA = (
@@ -43,11 +43,11 @@ def synthetic_tables(spark: SparkSession, spec: SyntheticSpec) -> tuple[DataFram
         spark.createDataFrame(hourly_rows, HOURLY_SCHEMA)
         .withColumn("obs_ts", F.to_timestamp("obs_ts"))
         .withColumn("obs_date", F.to_date("obs_date"))
-        .withColumn(PRIMARY_STATION_COL, F.lit(True))
+        .withColumn(PRIMARY_STATION_COLUMN, F.lit(True))
     )
     daily = (
         spark.createDataFrame(daily_rows, DAILY_SCHEMA)
         .withColumn("obs_date", F.to_date("obs_date"))
-        .withColumn(PRIMARY_STATION_COL, F.lit(True))
+        .withColumn(PRIMARY_STATION_COLUMN, F.lit(True))
     )
     return hourly, daily

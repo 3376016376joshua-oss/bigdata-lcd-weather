@@ -8,8 +8,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-ROUTINE = "FM-15"
-SPECIAL = "FM-16"
+from lcdweather.ingest.contract import REPORT_ROUTINE, REPORT_SPECIAL
+
 ANOMALY_PERSISTENCE = 0.7
 ANOMALY_NOISE_F = 4.0
 MEAN_DAILY_RANGE_F = 14.0
@@ -75,11 +75,11 @@ def _hourly_rows(city, day, hours, state, rng) -> list[tuple]:
     for hour in hours:
         stamp = f"{day.isoformat()} {hour:02d}:00:00"
         readings = _routine_readings(hour, len(hours), state, front_coming, rng)
-        rows.append((*identity, stamp, day.isoformat(), ROUTINE, *readings, False))
+        rows.append((*identity, stamp, day.isoformat(), REPORT_ROUTINE, *readings, False))
     if state["wet"]:
         stamp = f"{day.isoformat()} {hours[0]:02d}:30:00"
         no_readings = (None, None, None, None, None, None, OVERCAST_OKTA, None)
-        rows.append((*identity, stamp, day.isoformat(), SPECIAL, *no_readings, True))
+        rows.append((*identity, stamp, day.isoformat(), REPORT_SPECIAL, *no_readings, True))
     return rows
 
 

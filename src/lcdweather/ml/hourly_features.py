@@ -5,8 +5,8 @@ from __future__ import annotations
 from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
 
+from lcdweather.ingest.contract import REPORT_ROUTINE
 from lcdweather.ml.daily_features import CITY_KEY, DATE_COL
-from lcdweather.ml.settings import ROUTINE_REPORT_TYPE
 
 TIMESTAMP_COL = "obs_ts"
 # The last routine report of a day is near 23:00, so the reference readings of
@@ -23,7 +23,7 @@ SECONDS_PER_HOUR = 3600.0
 
 def _routine(column: str) -> Column:
     """Routine hourly reports only, so storm-time specials do not skew the means."""
-    is_routine = F.col("report_type") == ROUTINE_REPORT_TYPE
+    is_routine = F.col("report_type") == REPORT_ROUTINE
     return F.when(is_routine, F.col(column).cast("double"))
 
 

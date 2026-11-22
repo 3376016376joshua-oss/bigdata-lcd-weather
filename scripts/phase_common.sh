@@ -1,4 +1,4 @@
-# Shared by run_phase2.sh and run_phase3.sh. Source it, do not run it.
+# Shared by run_phase2.sh, run_phase3.sh, run_phase5.sh and run_phase6_timing.sh. Source it, do not run it.
 # Loads the settings of scripts/env.sh and defines the helpers that package and submit a PySpark job.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

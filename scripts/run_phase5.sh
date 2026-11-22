@@ -7,41 +7,30 @@
 #   bash scripts/run_phase5.sh fetch                 # only download the results
 #
 # Local smoke run without Hive (needs pyspark and Java):
-#   SPARK_SUBMIT_ARGS="--master local[2]" PHASE5_JOB_ARGS="--synthetic" PHASE5_GRID=quick \
+#   LCD_SPARK_SUBMIT_OPTS="--master local[2]" PHASE5_JOB_ARGS="--synthetic" PHASE5_GRID=quick \
 #     LCD_RESULTS_URI=results bash scripts/run_phase5.sh
+#
+# LCD_SPARK_SUBMIT_OPTS holds extra spark-submit flags, as for run_phase2.sh.
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# shellcheck source=scripts/env.sh
-source "${REPO_ROOT}/scripts/env.sh"
-HIVE_DB="${LCD_HIVE_DB}"
+# shellcheck source=scripts/phase_common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/phase_common.sh"
 RESULTS_URI="${LCD_RESULTS_URI:-${LCD_HDFS_ROOT}/results}"
 LOCAL_RESULTS="${LCD_RESULTS_DIR}"
-SPARK_SUBMIT="${SPARK_SUBMIT:-spark-submit}"
-SPARK_SUBMIT_ARGS="${SPARK_SUBMIT_ARGS:---master yarn --deploy-mode client}"
 PHASE5_JOB_ARGS="${PHASE5_JOB_ARGS:-}"
 # Hyper-parameter grid of the two supervised jobs: full, or quick for a smoke run.
 PHASE5_GRID="${PHASE5_GRID:-full}"
-PACKAGE_ZIP="${REPO_ROOT}/dist/lcdweather.zip"
 RESULT_PREFIXES=(q7_ q8_ kmeans_)
 
-package_sources() {
-  mkdir -p "$(dirname "${PACKAGE_ZIP}")"
-  rm -f "${PACKAGE_ZIP}"
-  (cd "${REPO_ROOT}/src" && python3 -m zipfile -c "${PACKAGE_ZIP}" lcdweather)
-}
-
-submit_job() {
+submit_phase5_job() {
   local job="$1"
   local grid_args=()
   if [[ "${job}" != "kmeans" ]]; then
     grid_args=(--grid "${PHASE5_GRID}")
   fi
   echo "==> Phase 5 ${job}"
-  # shellcheck disable=SC2086  # the *_ARGS variables hold several words by design
-  ${SPARK_SUBMIT} ${SPARK_SUBMIT_ARGS} --py-files "${PACKAGE_ZIP}" \
-    "${REPO_ROOT}/jobs/phase5_${job}.py" \
-    --database "${HIVE_DB}" --results-dir "${RESULTS_URI}" \
+  # shellcheck disable=SC2086  # PHASE5_JOB_ARGS holds several words by design
+  submit_job "phase5_${job}.py" --database "${LCD_HIVE_DB}" --results-dir "${RESULTS_URI}" \
     ${grid_args[@]+"${grid_args[@]}"} ${PHASE5_JOB_ARGS}
 }
 
@@ -68,11 +57,11 @@ main() {
     jobs=(regression classification kmeans)
   fi
   if [[ "${jobs[0]}" != "fetch" ]]; then
-    package_sources
+    build_package_zip
     local job
     for job in "${jobs[@]}"; do
       case "${job}" in
-        regression|classification|kmeans) submit_job "${job}" ;;
+        regression|classification|kmeans) submit_phase5_job "${job}" ;;
         *) echo "Unknown job '${job}' (regression, classification, kmeans, fetch)" >&2; exit 2 ;;
       esac
     done

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
-from lcdweather.ml.settings import PRIMARY_STATION_COL
+from lcdweather.ingest.contract import PRIMARY_STATION_COLUMN
 from lcdweather.ml.synthetic import (
     CONSECUTIVE_DAYS_SPEC,
     YEAR_ROUND_SPEC,
@@ -27,7 +27,7 @@ def primary_station_tables(hourly: DataFrame, daily: DataFrame) -> WeatherTables
     Los Angeles has two stations under one city code in 2024-2025; Phase 2 flags
     the one meant for each year, so features never blend two stations.
     """
-    primary = F.col(PRIMARY_STATION_COL)
+    primary = F.col(PRIMARY_STATION_COLUMN)
     return WeatherTables(hourly=hourly.where(primary), daily=daily.where(primary))
 
 

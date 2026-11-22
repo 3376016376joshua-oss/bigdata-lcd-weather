@@ -29,6 +29,8 @@ HOURLY_REPORT_TYPES = (
 )
 
 PARTITION_COLUMNS = ("station", "yr")
+# True for the station meant for each city and year (Los Angeles has two in 2024-2025).
+PRIMARY_STATION_COLUMN = "is_primary_station"
 
 # Daily mean this many degF or more above (below) normal makes a warm (cold) extreme day.
 EXTREME_DEPARTURE_F = 10.0
@@ -59,7 +61,7 @@ HOURLY_COLUMNS = (
     "month",
     "season",
     "is_special",
-    "is_primary_station",
+    PRIMARY_STATION_COLUMN,
     *PARTITION_COLUMNS,
 )
 
@@ -89,7 +91,7 @@ DAILY_COLUMNS = (
     "is_cold_extreme",
     "is_dry_day",
     "is_wet_day",
-    "is_primary_station",
+    PRIMARY_STATION_COLUMN,
     *PARTITION_COLUMNS,
 )
 
@@ -109,7 +111,7 @@ MONTHLY_COLUMNS = (
     "hdd",
     "cdd",
     "normal_tavg_f",
-    "is_primary_station",
+    PRIMARY_STATION_COLUMN,
     *PARTITION_COLUMNS,
 )
 
