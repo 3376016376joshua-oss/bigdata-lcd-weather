@@ -13,10 +13,10 @@ from pyspark.sql import functions as F
 
 NUMBER_PATTERN = r"^\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*[A-Za-z]?\s*$"
 TRACE_PATTERN = r"^\s*T\s*[A-Za-z]?\s*$"
-# A layer whose amount is 00-08 oktas or 09 (sky obscured). Layers coded 10 (partly
-# obscured, amount unknown) and bare cloud heights carry no amount and are skipped. The
-# lookarounds keep adjacent layers such as ``FEW:02 BKN:07`` from sharing a space.
-SKY_LAYER_OKTA_PATTERN = r"(?<!\S)[A-Z0-9]*:(0\d)(?!\S)"
+# A layer token whose amount is 00-08 oktas or 09 (sky obscured). Layers coded 10 (partly
+# obscured, amount unknown) and bare cloud heights carry no amount and are skipped.
+SKY_LAYER_OKTA_PATTERN = r"^[A-Z0-9]*:(0\d)$"
+WHITESPACE_PATTERN = r"\s+"
 CLOCK_PATTERN = r"^\d{4}$"
 RAW_TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
 TRACE_AMOUNT = 0.0
@@ -48,8 +48,10 @@ def sky_cover_okta(sky_conditions: Column) -> Column:
 
     METAR layer amounts are cumulative, so the total is the largest amount of any layer.
     """
-    oktas = F.regexp_extract_all(sky_conditions, F.lit(SKY_LAYER_OKTA_PATTERN), F.lit(1))
-    return F.array_max(F.transform(oktas, lambda okta: okta.cast("int")))
+    tokens = F.split(F.trim(sky_conditions), WHITESPACE_PATTERN)
+    oktas = F.transform(tokens, lambda token: F.regexp_extract(token, SKY_LAYER_OKTA_PATTERN, 1))
+    amounts = F.filter(oktas, lambda okta: okta != "")
+    return F.array_max(F.transform(amounts, lambda okta: okta.cast("int")))
 
 
 def clock_time(text: Column) -> Column:
