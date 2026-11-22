@@ -24,7 +24,7 @@ DEFAULT_QUERIES_DIR = "hive/queries"
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     settings = load_settings()
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0], allow_abbrev=False)
     parser.add_argument(
         "--db", default=settings.hive_db, help="Hive database of the cleaned tables"
     )

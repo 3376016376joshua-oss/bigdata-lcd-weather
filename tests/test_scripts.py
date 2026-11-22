@@ -225,6 +225,14 @@ class Phase4ScriptTest(ScriptTestCase):
                 self.assertIn("--results-dir", completed.stderr)
                 self.assertFalse(marker.exists())
 
+    def test_job_rejects_abbreviated_results_dir(self):
+        job = REPO_ROOT / "jobs" / "phase4_analysis.py"
+        for argument in (["--results", "results"], ["--res=results"]):
+            with self.subTest(argument=argument):
+                completed = self.run_script([sys.executable, str(job), *argument])
+                self.assertEqual(completed.returncode, 2)
+                self.assertIn("unrecognized arguments", completed.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
