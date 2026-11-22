@@ -311,9 +311,8 @@ Angeles, Phoenix and Seattle, East is Chicago, Indianapolis, New York and Philad
 routine reports are `FM-15` and special reports are `FM-16`. Cities are grouped by
 `city_code` and every query reads only rows with `is_primary_station`, so the Los Angeles
 series is Downtown/USC for 2010-2023 and the airport for 2024-2025, one station per day.
-The hourly cycle puts each
-routine report in its nearest hour (the report at 13:53 counts for 14:00). Dry spells
-(`q5_dry_spells.sql`) use a gaps-and-islands window query.
+The hourly cycle puts each routine report in its nearest hour (the report at 13:53 counts
+for 14:00). Dry spells (`q5_dry_spells.sql`) use a gaps-and-islands window query.
 
 Run from the repository root on the cluster, after the cleaned tables exist. The scripts
 read `LCD_NETID`, `LCD_HIVE_DB`, `LCD_HDFS_ROOT` and `LCD_RESULTS_DIR` (see
