@@ -70,6 +70,24 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.hive_db, "scratch")
         self.assertEqual(list(settings.years), [2014, 2015])
 
+    def test_scheme_less_hdfs_root_stays_on_hdfs(self):
+        settings = config.load_settings({config.ENV_HDFS_ROOT: "/user/yw9614_nyu_edu/lcd/"})
+        self.assertEqual(settings.hdfs_root, "hdfs:///user/yw9614_nyu_edu/lcd")
+        self.assertEqual(settings.results_zone, "hdfs:///user/yw9614_nyu_edu/lcd/results")
+
+    def test_relative_hdfs_root_is_rejected(self):
+        with self.assertRaises(ValueError):
+            config.load_settings({config.ENV_HDFS_ROOT: "lcd"})
+        completed = subprocess.run(
+            ["bash", "-c", f'set -e; source "{ENV_SH}"; echo "sourced"'],
+            env={"PATH": "/usr/bin:/bin", config.ENV_HDFS_ROOT: "lcd"},
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertNotIn("sourced", completed.stdout)
+        self.assertIn(config.ENV_HDFS_ROOT, completed.stderr)
+
     def test_bad_years_are_rejected(self):
         with self.assertRaises(ValueError):
             config.load_settings({config.ENV_FIRST_YEAR: "twenty"})
@@ -81,6 +99,8 @@ class SettingsTest(unittest.TestCase):
             {},
             {config.ENV_NETID: "lz3516"},
             {config.ENV_HDFS_ROOT: "hdfs:///tmp/lcd/", config.ENV_LAST_YEAR: "2012"},
+            {config.ENV_HDFS_ROOT: "/user/lz3516_nyu_edu/lcd/"},
+            {config.ENV_HDFS_ROOT: "file:///tmp/lcd"},
         )
         for overrides in cases:
             with self.subTest(overrides=overrides):

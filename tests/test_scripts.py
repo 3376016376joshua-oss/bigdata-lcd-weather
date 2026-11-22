@@ -209,5 +209,30 @@ class UploadScriptTest(ScriptTestCase):
         self.assertEqual(self.upload("--nope").returncode, 2)
 
 
+class Phase4ScriptTest(ScriptTestCase):
+    def test_all_rejects_a_local_results_dir_before_running_spark(self):
+        stub_bin = self.folder / "bin"
+        stub_bin.mkdir()
+        marker = self.folder / "spark-submit-called"
+        stub = stub_bin / "spark-submit"
+        stub.write_text(f'#!/bin/sh\ntouch "{marker}"\n')
+        stub.chmod(0o755)
+        path = f"{stub_bin}{os.pathsep}{os.environ['PATH']}"
+        for argument in (["--results-dir", "results"], ["--results-dir=results"]):
+            with self.subTest(argument=argument):
+                completed = self.run_bash("run_phase4.sh", "all", *argument, PATH=path)
+                self.assertEqual(completed.returncode, 2)
+                self.assertIn("--results-dir", completed.stderr)
+                self.assertFalse(marker.exists())
+
+    def test_job_rejects_abbreviated_results_dir(self):
+        job = REPO_ROOT / "jobs" / "phase4_analysis.py"
+        for argument in (["--results", "results"], ["--res=results"]):
+            with self.subTest(argument=argument):
+                completed = self.run_script([sys.executable, str(job), *argument])
+                self.assertEqual(completed.returncode, 2)
+                self.assertIn("unrecognized arguments", completed.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
