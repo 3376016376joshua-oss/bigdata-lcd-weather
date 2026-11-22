@@ -13,6 +13,7 @@ WITH lagged AS (
     LAG(tavg_f) OVER (PARTITION BY city_code ORDER BY obs_date) AS prev_tavg_f,
     LAG(obs_date) OVER (PARTITION BY city_code ORDER BY obs_date) AS prev_date
   FROM ${hivevar:db}.lcd_daily
+  WHERE is_primary_station
 ),
 changes AS (
   SELECT
@@ -42,7 +43,7 @@ humidity AS (
     season,
     AVG(rh_pct) AS mean_rh
   FROM ${hivevar:db}.lcd_hourly
-  WHERE report_type = 'FM-15'
+  WHERE is_primary_station AND report_type = 'FM-15'
   GROUP BY city_code, season
 )
 SELECT

@@ -285,11 +285,10 @@ python jobs/phase3_profile.py --local --input data/raw --years 2014-2015
 
 The tables go to `spark-warehouse/clean/` and the results to `results/`.
 
-### Phase 3 - Analysis with Hive and Spark (questions 1-6)
+### Phase 4 - Analysis with Hive and Spark (questions 1-6)
 
-This is Phase 4 of the proposal (geography, time and category analysis), so the job and
-script are named `phase4`. It answers questions 1-6 from the cleaned Hive tables
-`lcd_daily`, `lcd_hourly` and `lcd_monthly`. Each `hive/queries/q<N>_<name>.sql` file holds
+The geography, time and category analysis. It answers questions 1-6 from the cleaned Hive
+tables `lcd_daily`, `lcd_hourly` and `lcd_monthly`. Each `hive/queries/q<N>_<name>.sql` file holds
 one query and produces one result table with the same name. The same files run on both
 engines: Beeline runs them on Hive, and `jobs/phase4_analysis.py` runs them with Spark SQL,
 so every question has a single definition.
@@ -310,7 +309,9 @@ Definitions used throughout: an extreme day has a daily mean 10 °F or more abov
 normal; a dry day has less than 0.01 in of precipitation (trace is dry); West is Los
 Angeles, Phoenix and Seattle, East is Chicago, Indianapolis, New York and Philadelphia;
 routine reports are `FM-15` and special reports are `FM-16`. Cities are grouped by
-`city_code`, so the two Los Angeles stations form one series. The hourly cycle puts each
+`city_code` and every query reads only rows with `is_primary_station`, so the Los Angeles
+series is Downtown/USC for 2010-2023 and the airport for 2024-2025, one station per day.
+The hourly cycle puts each
 routine report in its nearest hour (the report at 13:53 counts for 14:00). Dry spells
 (`q5_dry_spells.sql`) use a gaps-and-islands window query.
 
@@ -342,9 +343,9 @@ and rejects `--results-dir`.
 The tests in `tests/analysis/` run every query on small synthetic tables in local Spark
 and draw every figure.
 
-### Phase 4 - Machine learning with Spark MLlib (questions 7-8)
+### Phase 5 - Machine learning with Spark MLlib (questions 7-8)
 
-This is Phase 5 of the proposal, so the jobs are named `jobs/phase5_*.py`. They read the
+The jobs are `jobs/phase5_*.py`. They read the
 cleaned Hive tables `lcd_hourly` and `lcd_daily`, whose columns (`obs_ts`, `report_type`,
 `temp_f`, `station_pressure_hpa`, `tmax_f`, `prcp_in`, ...) come from Phase 2, so Phase 2
 must have been run first. Only rows with `is_primary_station` are used, so Los Angeles has
@@ -410,7 +411,7 @@ LCD_SPARK_SUBMIT_OPTS="--master local[2]" PHASE5_JOB_ARGS="--synthetic" PHASE5_G
   LCD_RESULTS_URI=results bash scripts/run_phase5.sh
 ```
 
-### Phase 5 - Results and figures
+### Phase 6 - Visualization and run-time scaling
 
 _Exporting `results/*.csv` from HDFS and drawing the figures. Steps are added with the
 visualization code._
@@ -436,7 +437,7 @@ done
 | `viz/q5_precipitation.py` | `q5_precip_actual_vs_normal`, `q5_longest_dry_spells`, `q5_heaviest_rain_days` |
 | `viz/q6_volatility.py` | `q6_city_volatility`, `q6_special_reports_wet_vs_dry`, `q6_special_reports_around_storms` |
 
-### Phase 6 - Run-time scaling
+#### Run-time scaling
 
 Times the Phase 2 ingestion job (`jobs/phase2_ingest.py`) and the Phase 4 analysis job
 (`jobs/phase4_analysis.py`) on 1, 4, 8 and 16 years of input (2025, 2022-2025, 2018-2025,

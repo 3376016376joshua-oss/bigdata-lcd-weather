@@ -15,7 +15,7 @@ WITH hourly AS (
     COUNT(*) AS n_obs,
     AVG(temp_f) AS mean_temp
   FROM ${hivevar:db}.lcd_hourly
-  WHERE report_type = 'FM-15' AND temp_f IS NOT NULL
+  WHERE is_primary_station AND report_type = 'FM-15' AND temp_f IS NOT NULL
   GROUP BY city_code, season, PMOD(HOUR(obs_ts) + IF(MINUTE(obs_ts) >= 30, 1, 0), 24)
 )
 SELECT

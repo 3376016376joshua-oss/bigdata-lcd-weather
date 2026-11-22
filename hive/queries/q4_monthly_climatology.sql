@@ -10,5 +10,6 @@ SELECT
   ROUND(AVG(tmin_f), 2) AS mean_tmin_f,
   ROUND(AVG(temp_range_f), 2) AS mean_daily_range_f
 FROM ${hivevar:db}.lcd_daily
+WHERE is_primary_station
 GROUP BY city_code, MONTH(obs_date)
 ORDER BY city_code, mo;

@@ -13,6 +13,7 @@ WITH monthly AS (
     SUM(temp_range_f) AS sum_range,
     COUNT(temp_range_f) AS n_range
   FROM ${hivevar:db}.lcd_daily
+  WHERE is_primary_station
   GROUP BY city_code, MONTH(obs_date)
 ),
 city_cycle AS (

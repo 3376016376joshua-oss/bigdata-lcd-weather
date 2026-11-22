@@ -11,7 +11,7 @@ DAILY_SCHEMA = (
     "snow_depth_in double, hdd double, cdd double, peak_wind_mph double, "
     "sustained_wind_mph double, sunrise string, sunset string, month int, season string, "
     "doy int, temp_range_f double, is_warm_extreme boolean, is_cold_extreme boolean, "
-    "is_dry_day boolean, is_wet_day boolean, station string, yr int"
+    "is_dry_day boolean, is_wet_day boolean, is_primary_station boolean, station string, yr int"
 )
 # obs_ts and obs_date are given as text and cast by Spark, so the hour of a report does
 # not depend on the time zone of the machine running the tests.
@@ -21,13 +21,13 @@ HOURLY_TEXT_SCHEMA = (
     "wind_gust_mph double, wind_dir_deg double, station_pressure_hpa double, "
     "sea_level_pressure_hpa double, pressure_change_hpa double, visibility_mi double, "
     "sky_conditions string, sky_cover_okta int, precip_in double, hour int, month int, "
-    "season string, is_special boolean, station string, yr int"
+    "season string, is_special boolean, is_primary_station boolean, station string, yr int"
 )
 MONTHLY_SCHEMA = (
     "city_code string, city string, month int, mean_tmax_f double, mean_tmin_f double, "
     "mean_tavg_f double, dep_tavg_f double, total_prcp_in double, dep_prcp_in double, "
     "total_snow_in double, days_max_ge_90 int, days_min_le_32 int, hdd double, cdd double, "
-    "normal_tavg_f double, station string, yr int"
+    "normal_tavg_f double, is_primary_station boolean, station string, yr int"
 )
 
 CITIES = {
@@ -81,6 +81,7 @@ def daily_row(
         "is_cold_extreme": None if dep_f is None else dep_f <= -EXTREME_DEPARTURE_F,
         "is_dry_day": None if prcp_in is None else prcp_in < WET_DAY_IN,
         "is_wet_day": None if prcp_in is None else prcp_in >= WET_DAY_IN,
+        "is_primary_station": True,
         "station": station,
         "yr": day.year,
     }
@@ -113,6 +114,7 @@ def hourly_row(
         "month": day.month,
         "season": SEASON_BY_MONTH[day.month],
         "is_special": report_type == SPECIAL,
+        "is_primary_station": True,
         "station": station,
         "yr": day.year,
     }
@@ -128,6 +130,7 @@ def monthly_row(
         "month": month,
         "total_prcp_in": total_prcp_in,
         "dep_prcp_in": dep_prcp_in,
+        "is_primary_station": True,
         "station": station,
         "yr": yr,
     }
