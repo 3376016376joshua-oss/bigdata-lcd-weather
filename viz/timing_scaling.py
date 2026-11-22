@@ -8,9 +8,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter, LogLocator, NullLocator
 from ml_plotting import SERIES_COLORS, parse_args, read_result, save_figure
 
 JOB_COLORS = {"ingest": SERIES_COLORS[0], "analysis": SERIES_COLORS[1]}
+LOG_TICK_MULTIPLES = tuple(range(1, 10))
 JOB_LABELS = {"ingest": "Phase 2 ingest", "analysis": "Phase 4 analysis"}
 
 
@@ -53,6 +55,13 @@ def plot_scaling(summary):
         ylabel="Median wall-clock time (s, log)",
         title="Log-log view (slope 1 = linear)",
     )
+    # Matplotlib's default log ticks put overlapping minor labels on a short range;
+    # label the measured sizes and times instead.
+    loglog.xaxis.set_minor_locator(NullLocator())
+    loglog.set_xticks(sizes["input_gb"].tolist(), ticks)
+    loglog.yaxis.set_major_locator(LogLocator(subs=LOG_TICK_MULTIPLES))
+    loglog.yaxis.set_major_formatter(FormatStrFormatter("%g"))
+    loglog.yaxis.set_minor_locator(NullLocator())
     linear.legend(loc="upper left")
     figure.tight_layout()
     return figure

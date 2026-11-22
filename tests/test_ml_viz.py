@@ -257,6 +257,32 @@ def test_timing_figure(tmp_path, monkeypatch):
     assert figures == ["timing_runtime_scaling.png"]
 
 
+def test_timing_loglog_axis_labels_only_the_measured_sizes(monkeypatch):
+    """The log-log panel must not show matplotlib's crowded minor-tick labels."""
+    import pandas as pd
+
+    monkeypatch.syspath_prepend(str(VIZ_DIR))
+    plot_scaling = importlib.import_module("timing_scaling").plot_scaling
+    summary = pd.DataFrame(
+        {
+            "job": ["ingest"] * 4,
+            "n_years": [1, 4, 8, 16],
+            "input_gb": [0.003, 0.011, 0.023, 0.046],
+            "median_wall_seconds": [4.1, 4.0, 4.6, 7.7],
+            "loglog_slope": [0.2] * 4,
+        }
+    )
+
+    figure = plot_scaling(summary)
+    loglog = figure.axes[1]
+    figure.canvas.draw()
+
+    labels = [tick.get_text() for tick in loglog.get_xticklabels() if tick.get_text()]
+    assert labels == ["0.00\n1 yr", "0.01\n4 yr", "0.02\n8 yr", "0.05\n16 yr"]
+    assert not [t for t in loglog.get_xticklabels(minor=True) if t.get_text()]
+    assert not [t for t in loglog.get_yticklabels(minor=True) if t.get_text()]
+
+
 def test_missing_result_file_names_the_job_output(tmp_path, monkeypatch):
     monkeypatch.syspath_prepend(str(VIZ_DIR))
     read_result = importlib.import_module("ml_plotting").read_result
