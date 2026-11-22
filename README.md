@@ -62,7 +62,7 @@ cluster.
 | Path | Contents |
 | --- | --- |
 | `config/stations.csv` | Station list: `station_id,city,city_code,state,lat,lon,start_year,end_year` |
-| `src/lcdweather/` | Python package: `config` (paths, Hive database, years), `units` (metric to U.S. units), `stations`, `acquire/` (Phase 1), and the ingestion, analysis and ML code |
+| `src/lcdweather/` | Python package: `config` (paths, Hive database, years), `units` (metric to U.S. units), `stations`, `acquire/` (Phase 1), `ingest/` (Phases 2 and 3), and the analysis and ML code |
 | `scripts/` | Bash and Python entry points: downloads, HDFS upload, `spark-submit` wrappers |
 | `jobs/` | Thin PySpark jobs for `spark-submit`, named `<phase>_<name>.py` |
 | `hive/ddl/`, `hive/queries/` | HiveQL run with Beeline |
@@ -160,8 +160,127 @@ header, or a file has malformed rows or rows of another station. Missing days ar
 
 ### Phase 2 - Loading and cleaning in Hive
 
-_Raw CSV to the cleaned ORC tables `lcd_hourly`, `lcd_daily` and `lcd_monthly`. Steps are
-added with the ingestion code._
+Needs the raw zone in HDFS: `$LCD_HDFS_ROOT/raw/<station_id>/LCD_<station_id>_<year>.csv`.
+
+```bash
+bash scripts/run_phase2.sh
+```
+
+The script zips `src/lcdweather`, submits `jobs/phase2_ingest.py` with `spark-submit`, then
+runs the three files in `hive/ddl/` with Beeline. The job reads every raw file with all 125
+columns as text, turns the cells into numbers, converts the units and writes three ORC
+tables partitioned by `station` and `yr` under `$LCD_HDFS_ROOT/clean/`, registered as
+external tables in the Hive database:
+
+| Table | Rows from | One row per |
+| --- | --- | --- |
+| `lcd_hourly` | `FM-15` routine, `FM-16` special, `FM-12` synoptic (and the rare `SY-MT`, `AUTO`) | report |
+| `lcd_daily` | `SOD` | station and day |
+| `lcd_monthly` | `SOM` | station and month |
+
+Check the result:
+
+```bash
+beeline -u jdbc:hive2://localhost:10000 -e "
+  USE ${LCD_HIVE_DB:-wl3564_nyu_edu};
+  SHOW TABLES LIKE 'lcd_*';
+  SELECT city_code, COUNT(*) FROM lcd_daily WHERE is_primary_station GROUP BY city_code;"
+hdfs dfs -ls "hdfs:///user/${LCD_NETID:-wl3564}_nyu_edu/lcd/clean/lcd_daily" | head
+```
+
+What the cleaning does:
+
+- **Units**: temperatures, departures and degree days to degF; precipitation, snowfall and
+  snow depth to inches; wind to mph; visibility to miles. Pressure stays in hPa.
+- **Flags**: a trailing flag letter is dropped (`0.805s` suspect, `4.023V` variable); `T`
+  (trace) becomes 0.0, with `prcp_trace` set in `lcd_daily`; `*`, `M`, `None`, `VRB` and
+  blank become null.
+- **Derived columns**: `season` (DJF/MAM/JJA/SON), `hour`, `month`, `doy`, `temp_range_f`,
+  `dep_f` (departure of the daily mean from the 1991-2020 normal), `is_warm_extreme`
+  (`dep_f >= 10`), `is_cold_extreme` (`dep_f <= -10`), `is_dry_day` (`prcp_in < 0.01`, so a
+  trace is dry) and `is_wet_day`. A flag is null when its source value is missing.
+- **`sky_cover_okta`**: cover of the lowest cloud layer, 0-8 oktas, 9 when the sky is
+  obscured.
+- **`normal_tavg_f`** in `lcd_monthly` is the monthly mean minus its departure; LCD v2 does
+  not give the normal itself.
+- **Stations**: `city` and `city_code` come from `config/stations.csv`; stations not listed
+  there are dropped. Los Angeles has both of its stations in every table under the code
+  `KCQT`. `is_primary_station` is true for the station that stands for the city in that year
+  (Downtown/USC to 2023, the airport from 2024), so filter on it to get one station per
+  city and year.
+- **Duplicates**: reports that are identical in every cleaned column are written once. Two
+  different reports for the same minute (an `FM-12` next to an `FM-15`) are both kept.
+- **Time**: `obs_ts` is local standard time as written by NOAA, with no daylight saving. The
+  jobs run with `spark.sql.session.timeZone=UTC` so that no hour is shifted; set the same in
+  any Spark session that reads `obs_ts`, or use the ready-made `obs_date` and `hour`.
+
+Options, passed through to the job:
+
+```bash
+bash scripts/run_phase2.sh --years 2010-2013        # a subset: 2014 | 2010-2013 | 2010,2014
+# A timed trial that leaves the real tables alone (tables trial_lcd_hourly, ...):
+LCD_SKIP_HIVE_DDL=1 bash scripts/run_phase2.sh --years 2010-2013 --table-prefix trial_
+# Extra spark-submit flags:
+LCD_SPARK_SUBMIT_OPTS="--num-executors 4 --executor-memory 4g" bash scripts/run_phase2.sh
+```
+
+Every run replaces the tables it writes, so a run with `--years` and no `--table-prefix`
+leaves only those years in `lcd_*`.
+
+If Hive cannot read the tables that Spark registered, write the files only and let Hive
+create the tables: `bash scripts/run_phase2.sh --files-only` (the Beeline step then creates
+the external tables and runs `MSCK REPAIR TABLE`). A single DDL file is run with:
+
+```bash
+beeline -u jdbc:hive2://localhost:10000 --hivevar db="$LCD_HIVE_DB" \
+  --hivevar clean_zone="$LCD_HDFS_ROOT/clean" -f hive/ddl/lcd_daily.sql
+```
+
+The Beeline address is `LCD_BEELINE_URL` (default `jdbc:hive2://localhost:10000`), and
+`LCD_LOCAL_WAREHOUSE` (default `spark-warehouse`) is where a `--local` run keeps its tables.
+
+### Phase 3 - Validation and profiling
+
+Needs the Phase 2 tables and the FiveThirtyEight files in
+`$LCD_HDFS_ROOT/fivethirtyeight/<CODE>.csv`.
+
+```bash
+bash scripts/run_phase3.sh
+```
+
+The script submits `jobs/phase3_validate.py` and `jobs/phase3_profile.py`, which write to
+`$LCD_HDFS_ROOT/results/<name>/`, then copies each result to `results/<name>.csv` with
+`hdfs dfs -getmerge`:
+
+| File | Contents |
+| --- | --- |
+| `results/validation_538.csv` | Per city, `lcd_daily` against FiveThirtyEight for 2014-07-01 to 2015-06-30: days compared and, for `tmax`, `tmin`, `tavg` and `prcp`, the pairs (`_n`), correlation (`_corr`), mean absolute difference (`_mae`) and mean difference LCD minus FiveThirtyEight (`_bias`) |
+| `results/validation_538_daily.csv` | The joined days: both values and their difference for each measure |
+| `results/profile_report_types.csv` | Raw zone: rows per station, year and `REPORT_TYPE` |
+| `results/profile_missing.csv` | Cleaned tables: rows, missing values and percent missing per station and column |
+| `results/profile_ranges.csv` | Cleaned tables: count, minimum, maximum, mean and standard deviation per station and numeric column |
+| `results/table_row_counts.csv` | Exact rows of each table, all stations and primary stations only, with stations, station-years and first and last year |
+
+Only the measured values are compared. FiveThirtyEight took its normals from records since
+1880 and LCD v2 uses 1991-2020, so the anomalies of the two sources are expected to differ.
+FiveThirtyEight rounds to whole degF, which alone gives a mean absolute difference of up to
+about 0.3 degF.
+
+Both jobs take `--from-files` to read the ORC files in the cleaned zone instead of the Hive
+tables.
+
+### Trying Phases 2 and 3 on a laptop
+
+In the local environment described under "Local development", `--local` runs the same jobs
+without HDFS or Hive:
+
+```bash
+python jobs/phase2_ingest.py --local --input data/raw --years 2014-2015
+python jobs/phase3_validate.py --local --fivethirtyeight data/fivethirtyeight
+python jobs/phase3_profile.py --local --input data/raw --years 2014-2015
+```
+
+The tables go to `spark-warehouse/clean/` and the results to `results/`.
 
 ### Phase 3 - Analysis with Hive and Spark (questions 1-6)
 
