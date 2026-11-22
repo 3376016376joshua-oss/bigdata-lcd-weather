@@ -110,6 +110,25 @@ class CheckScriptTest(ScriptTestCase):
         )
         self.assertEqual(len(self.read_csv(self.manifests / "missing_days.csv")), 360)
 
+    def test_checking_a_subset_keeps_the_rows_of_other_files(self):
+        self.place_sample()
+        other = self.raw / "USW00023174" / "LCD_USW00023174_2024.csv"
+        other.parent.mkdir(parents=True)
+        shutil.copy(SAMPLE, other)
+        both = ["--years", "2014,2024", "--stations", f"{STATION},USW00023174"]
+        self.assertEqual(self.check(*both).returncode, 1)
+        names = ("file_checks.csv", "report_type_counts.csv", "missing_days.csv")
+        before = {name: self.read_csv(self.manifests / name) for name in names}
+
+        result = self.check(*ONE_FILE)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("checked 1 of 1 files", result.stdout)
+        for name in names:
+            self.assertEqual(self.read_csv(self.manifests / name), before[name], name)
+        stations = {row["station"] for row in before["file_checks.csv"]}
+        self.assertEqual(stations, {STATION, "USW00023174"})
+
     def test_absent_file_is_a_problem(self):
         self.place_sample()
         result = self.check("--years", "2014-2015", "--stations", STATION)

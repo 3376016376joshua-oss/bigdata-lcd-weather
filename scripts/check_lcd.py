@@ -6,9 +6,10 @@ Standard library only. Run from the repository root after ``download_lcd.py``:
     python3 scripts/check_lcd.py
     python3 scripts/check_lcd.py --raw data/raw --manifests manifests
 
-Writes ``file_checks.csv``, ``report_type_counts.csv`` and ``missing_days.csv``. Exits with
-status 1 when a selected file is absent, a header differs from the 125-column LCD v2 header,
-or a file holds rows that do not belong to it. Missing days are reported, not treated as errors.
+Updates ``file_checks.csv``, ``report_type_counts.csv`` and ``missing_days.csv``, replacing
+the rows of the checked files and keeping the rows of other files. Exits with status 1 when a
+selected file is absent, a header differs from the 125-column LCD v2 header, or a file holds
+rows that do not belong to it. Missing days are reported, not treated as errors.
 """
 
 from __future__ import annotations
