@@ -120,7 +120,8 @@ hdfs dfs -ls -R "hdfs:///user/${LCD_NETID}_nyu_edu/lcd" | head
 ```
 
 `download_lcd.py` and `check_lcd.py` use only the Python standard library. Both accept
-`--years 2014-2015,2024` and `--stations USW00094728,USW00023174` to work on a subset;
+`--years 2014-2015,2024` and `--stations USW00094728,USW00023174` to work on a subset; a
+subset run replaces only the selected files' rows in the manifests and keeps the others.
 `download_lcd.py` also takes `--out`, `--workers`, `--retries` and `--force`.
 
 HDFS layout after step 4:
@@ -140,7 +141,7 @@ The manifests written by steps 1 and 2:
 | `manifests/missing_days.csv` | station and missing day | `station,year,date,missing_hourly,missing_daily_summary` |
 
 `check_lcd.py` exits with status 1 if a file is absent, a header is not the 125-column LCD v2
-header, or a file has malformed rows. Missing days are data, not errors.
+header, or a file has malformed rows or rows of another station. Missing days are data, not errors.
 
 **What the committed manifests show** (downloaded 2026-11-22):
 
