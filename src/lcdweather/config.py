@@ -28,7 +28,6 @@ DEFAULT_FIRST_YEAR = 2010
 DEFAULT_LAST_YEAR = 2025
 DEFAULT_BASE_URL = "https://www.ncei.noaa.gov/oa/local-climatological-data/v2/access"
 DEFAULT_LOCAL_RAW_DIR = "data/raw"
-HDFS_SCHEME = "hdfs://"
 DEFAULT_FIVETHIRTYEIGHT_DIR = "data/fivethirtyeight"
 DEFAULT_MANIFESTS_DIR = "manifests"
 DEFAULT_RESULTS_DIR = "results"
