@@ -94,9 +94,13 @@ def _year(env: Mapping[str, str], name: str, default: int) -> int:
 
 
 def _cluster_uri(root: str) -> str:
-    """``root`` without a trailing slash, as ``hdfs://`` when it names no scheme."""
+    """``root`` without a trailing slash, as ``hdfs://`` when it is an absolute path."""
     root = root.rstrip("/")
-    return root if "://" in root else f"{HDFS_SCHEME}{root}"
+    if "://" in root:
+        return root
+    if root.startswith("/"):
+        return f"{HDFS_SCHEME}{root}"
+    raise ValueError(f"{ENV_HDFS_ROOT}={root} must be a URI or an absolute path")
 
 
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:

@@ -79,7 +79,7 @@ Every script and job reads the same settings, each overridable with an environme
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `LCD_NETID` | `wl3564` | NYU NetID that owns the HDFS home and the Hive database |
-| `LCD_HDFS_ROOT` | `hdfs:///user/<netid>_nyu_edu/lcd` | Root of the `raw/`, `clean/`, `fivethirtyeight/` and `results/` zones; a path without a scheme is read as `hdfs://<path>` |
+| `LCD_HDFS_ROOT` | `hdfs:///user/<netid>_nyu_edu/lcd` | Root of the `raw/`, `clean/`, `fivethirtyeight/` and `results/` zones; an absolute path without a scheme is read as `hdfs://<path>` |
 | `LCD_HIVE_DB` | `<netid>_nyu_edu` | Hive database |
 | `LCD_FIRST_YEAR`, `LCD_LAST_YEAR` | `2010`, `2025` | Years of the study |
 | `LCD_LOCAL_RAW_DIR` | `data/raw` | Local folder of the downloaded LCD files |

@@ -75,6 +75,19 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.hdfs_root, "hdfs:///user/yw9614_nyu_edu/lcd")
         self.assertEqual(settings.results_zone, "hdfs:///user/yw9614_nyu_edu/lcd/results")
 
+    def test_relative_hdfs_root_is_rejected(self):
+        with self.assertRaises(ValueError):
+            config.load_settings({config.ENV_HDFS_ROOT: "lcd"})
+        completed = subprocess.run(
+            ["bash", "-c", f'set -e; source "{ENV_SH}"; echo "sourced"'],
+            env={"PATH": "/usr/bin:/bin", config.ENV_HDFS_ROOT: "lcd"},
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertNotIn("sourced", completed.stdout)
+        self.assertIn(config.ENV_HDFS_ROOT, completed.stderr)
+
     def test_bad_years_are_rejected(self):
         with self.assertRaises(ValueError):
             config.load_settings({config.ENV_FIRST_YEAR: "twenty"})

@@ -18,7 +18,11 @@
 LCD_HDFS_ROOT="${LCD_HDFS_ROOT%/}"
 case "${LCD_HDFS_ROOT}" in
   *://*) ;;
-  *) LCD_HDFS_ROOT="hdfs://${LCD_HDFS_ROOT}" ;;
+  /*) LCD_HDFS_ROOT="hdfs://${LCD_HDFS_ROOT}" ;;
+  *)
+    echo "LCD_HDFS_ROOT=${LCD_HDFS_ROOT} must be a URI or an absolute path" >&2
+    return 1
+    ;;
 esac
 LCD_BASE_URL="${LCD_BASE_URL%/}"
 
