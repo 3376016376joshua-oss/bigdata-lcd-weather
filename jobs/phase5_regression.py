@@ -1,6 +1,6 @@
 """Phase 5 / Question 7: predict the next day's maximum temperature.
 
-spark-submit --py-files dist/lcdweather.zip jobs/phase5_regression.py \
+spark-submit --py-files lcdweather.zip jobs/phase5_regression.py \
     --database wl3564_nyu_edu --results-dir hdfs:///user/wl3564_nyu_edu/lcd/results
 """
 

@@ -1,6 +1,6 @@
 """Phase 5 / Question 4: cluster the ten cities into climate types with k-means.
 
-spark-submit --py-files dist/lcdweather.zip jobs/phase5_kmeans.py \
+spark-submit --py-files lcdweather.zip jobs/phase5_kmeans.py \
     --database wl3564_nyu_edu --results-dir hdfs:///user/wl3564_nyu_edu/lcd/results
 """
 

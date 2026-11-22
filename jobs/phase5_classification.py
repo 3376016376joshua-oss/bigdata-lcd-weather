@@ -1,6 +1,6 @@
 """Phase 5 / Question 8: predict whether the next day has measurable precipitation.
 
-spark-submit --py-files dist/lcdweather.zip jobs/phase5_classification.py \
+spark-submit --py-files lcdweather.zip jobs/phase5_classification.py \
     --database wl3564_nyu_edu --results-dir hdfs:///user/wl3564_nyu_edu/lcd/results
 """
 
