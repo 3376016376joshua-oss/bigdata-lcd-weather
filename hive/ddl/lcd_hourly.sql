@@ -1,4 +1,6 @@
--- Routine (FM-15), special (FM-16) and synoptic (FM-12) reports, one row per report.
+-- Routine (FM-15), special (FM-16), synoptic (FM-12), synoptic merged with a METAR (SY-MT)
+-- and automatic station (AUTO) reports, one row per report. sky_cover_okta is the total sky
+-- cover: the largest amount of any cloud layer, 0-8 oktas, 9 = sky obscured.
 -- obs_ts is local standard time; temperatures in degF, wind in mph, visibility in miles,
 -- precipitation in inches (a trace is 0.0), pressure in hPa.
 --

@@ -13,9 +13,10 @@ from pyspark.sql import functions as F
 
 NUMBER_PATTERN = r"^\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*[A-Za-z]?\s*$"
 TRACE_PATTERN = r"^\s*T\s*[A-Za-z]?\s*$"
-# Lowest reported layer whose amount is 00-08 oktas or 09 (sky obscured). Layers coded 10
-# (partly obscured, amount unknown) and bare cloud heights carry no amount and are skipped.
-SKY_LAYER_OKTA_PATTERN = r"(?:^|\s)[A-Z0-9]*:(0\d)(?:\s|$)"
+# A layer whose amount is 00-08 oktas or 09 (sky obscured). Layers coded 10 (partly
+# obscured, amount unknown) and bare cloud heights carry no amount and are skipped. The
+# lookarounds keep adjacent layers such as ``FEW:02 BKN:07`` from sharing a space.
+SKY_LAYER_OKTA_PATTERN = r"(?<!\S)[A-Z0-9]*:(0\d)(?!\S)"
 CLOCK_PATTERN = r"^\d{4}$"
 RAW_TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
 TRACE_AMOUNT = 0.0
@@ -43,9 +44,12 @@ def amount(text: Column) -> Column:
 
 
 def sky_cover_okta(sky_conditions: Column) -> Column:
-    """Cover of the lowest cloud layer in oktas (0-8, 9 = sky obscured); null when unknown."""
-    okta = F.regexp_extract(sky_conditions, SKY_LAYER_OKTA_PATTERN, 1)
-    return F.when(okta != "", okta.cast("int"))
+    """Total sky cover in oktas (0-8, 9 = sky obscured); null when no layer has an amount.
+
+    METAR layer amounts are cumulative, so the total is the largest amount of any layer.
+    """
+    oktas = F.regexp_extract_all(sky_conditions, F.lit(SKY_LAYER_OKTA_PATTERN), F.lit(1))
+    return F.array_max(F.transform(oktas, lambda okta: okta.cast("int")))
 
 
 def clock_time(text: Column) -> Column:

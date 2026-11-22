@@ -174,7 +174,7 @@ external tables in the Hive database:
 
 | Table | Rows from | One row per |
 | --- | --- | --- |
-| `lcd_hourly` | `FM-15` routine, `FM-16` special, `FM-12` synoptic (and the rare `SY-MT`, `AUTO`) | report |
+| `lcd_hourly` | `FM-15` routine, `FM-16` special, `FM-12` synoptic, `SY-MT` synoptic merged with a METAR, `AUTO` automatic station | report |
 | `lcd_daily` | `SOD` | station and day |
 | `lcd_monthly` | `SOM` | station and month |
 
@@ -199,8 +199,9 @@ What the cleaning does:
   `dep_f` (departure of the daily mean from the 1991-2020 normal), `is_warm_extreme`
   (`dep_f >= 10`), `is_cold_extreme` (`dep_f <= -10`), `is_dry_day` (`prcp_in < 0.01`, so a
   trace is dry) and `is_wet_day`. A flag is null when its source value is missing.
-- **`sky_cover_okta`**: cover of the lowest cloud layer, 0-8 oktas, 9 when the sky is
-  obscured.
+- **`sky_cover_okta`**: total sky cover, the largest amount of any reported cloud layer
+  (METAR layer amounts are cumulative), 0-8 oktas, 9 when the sky is obscured; null when no
+  layer gives an amount.
 - **`normal_tavg_f`** in `lcd_monthly` is the monthly mean minus its departure; LCD v2 does
   not give the normal itself.
 - **Stations**: `city` and `city_code` come from `config/stations.csv`; stations not listed
@@ -212,7 +213,9 @@ What the cleaning does:
   different reports for the same minute (an `FM-12` next to an `FM-15`) are both kept.
 - **Time**: `obs_ts` is local standard time as written by NOAA, with no daylight saving. The
   jobs run with `spark.sql.session.timeZone=UTC` so that no hour is shifted; set the same in
-  any Spark session that reads `obs_ts`, or use the ready-made `obs_date` and `hour`.
+  any Spark session that reads `obs_ts`, or use the ready-made `obs_date` and `hour`. In
+  Hive/Beeline queries use `obs_date` and `hour`: Hive can show `obs_ts` shifted when the
+  cluster JVM time zone is not UTC.
 
 Options, passed through to the job:
 

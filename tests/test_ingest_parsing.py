@@ -49,20 +49,27 @@ def test_amount_counts_a_trace_as_zero(spark):
     ]  # fmt: skip
 
 
-def test_sky_cover_okta_takes_the_lowest_layer_with_an_amount(spark):
+# Oracle: METAR layer amounts are cumulative, so total cover is the largest layer amount.
+def test_sky_cover_okta_is_the_total_cover_over_all_layers(spark):
     cells = [
         "CLR:00",
         "FEW:02 76.2",
         "SCT:04 9.14 BKN:07 13.41 OVC:08 30.48",
+        "FEW:02 0.76 OVC:08 1.52",
+        "FEW:02 BKN:07",
         "VV:09 2.74",
         "BKN:07 BKN:07",
         "X:10 1.0 OVC:08 3.0",
+        "FEW:02 48.77 X:10 1.0",
+        "X:10 1.0",
         "4.5",
         "",
         None,
     ]
 
-    assert _apply(spark, parsing.sky_cover_okta, cells) == [0, 2, 4, 9, 7, 8, None, None, None]
+    assert _apply(spark, parsing.sky_cover_okta, cells) == [
+        0, 2, 8, 8, 7, 9, 7, 8, 2, None, None, None, None,
+    ]  # fmt: skip
 
 
 def test_clock_time_and_text_or_null(spark):

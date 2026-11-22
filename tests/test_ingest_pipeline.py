@@ -154,6 +154,12 @@ def test_hourly_flags_and_markers_are_parsed_defensively(hourly):
     flagged = _hourly_report(hourly, NEW_YORK, "2014-12-31 22:51")
 
     assert trace["precip_in"] == 0.0
+    assert (trace["sky_conditions"], trace["sky_cover_okta"]) == ("BKN:07 3.96 OVC:08 6.1", 8)
+    synoptic_metar = _hourly_report(hourly, SEATTLE, "2010-09-19 10:00")
+    assert (synoptic_metar["sky_conditions"], synoptic_metar["sky_cover_okta"]) == (
+        "FEW:02 BKN:07",
+        7,
+    )
     assert _hourly_report(hourly, NEW_YORK, "2014-01-02 04:51")["wind_dir_deg"] is None
     assert variable["visibility_mi"] == pytest.approx(2.5, abs=1e-3)
     assert variable["pressure_change_hpa"] == -6.8

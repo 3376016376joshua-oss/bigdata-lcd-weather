@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from pyspark import StorageLevel
 from pyspark.sql import SparkSession
 
 from lcdweather.ingest.contract import DAILY_TABLE, HOURLY_TABLE, MONTHLY_TABLE
@@ -39,12 +40,17 @@ def run_ingest(spark: SparkSession, request: IngestRequest) -> list[TableTarget]
     raw = read_raw(spark, request.input_path, request.years)
     reports = with_station_identity(
         with_report_keys(raw, request.years), stations_frame(spark, request.stations)
-    )
+    ).persist(StorageLevel.MEMORY_AND_DISK)
     if request.register_tables:
         ensure_database(spark, request.database)
     targets = []
-    for table, build in TABLE_BUILDERS:
-        target = table_target(request.output_path, request.database, table, request.table_prefix)
-        write_table(build(reports), target, request.register_tables)
-        targets.append(target)
+    try:
+        for table, build in TABLE_BUILDERS:
+            target = table_target(
+                request.output_path, request.database, table, request.table_prefix
+            )
+            write_table(build(reports), target, request.register_tables)
+            targets.append(target)
+    finally:
+        reports.unpersist()
     return targets
