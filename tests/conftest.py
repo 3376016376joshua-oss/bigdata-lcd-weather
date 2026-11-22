@@ -1,4 +1,4 @@
-"""Shared pytest fixtures: paths to the LCD sample and a local SparkSession.
+"""Shared pytest fixtures: paths to the LCD sample and a local Hive-enabled SparkSession.
 
 Spark tests need pyspark and a Java runtime. Without them they are skipped, unless
 ``LCD_REQUIRE_SPARK=1`` (set in CI) turns the skip into a failure so they cannot be lost.
@@ -59,7 +59,10 @@ def lcd_sample_path() -> Path:
 
 @pytest.fixture(scope="session")
 def spark(tmp_path_factory):
-    """One local SparkSession for the whole test run."""
+    """One local SparkSession with a Hive metastore, like the cluster, for the whole run.
+
+    The Derby metastore and its log go to a temporary folder, not the working directory.
+    """
     reason = _why_spark_is_unavailable()
     if reason is not None:
         if os.environ.get(ENV_REQUIRE_SPARK) == "1":
@@ -67,6 +70,7 @@ def spark(tmp_path_factory):
         pytest.skip(reason)
     from pyspark.sql import SparkSession
 
+    metastore = tmp_path_factory.mktemp("hive-metastore")
     with pytest.MonkeyPatch.context() as environment:
         # Spark starts its Python workers with `python3` from PATH unless told otherwise, and
         # a worker on another Python version than the tests cannot run.
@@ -81,6 +85,15 @@ def spark(tmp_path_factory):
             .config("spark.default.parallelism", "2")
             .config("spark.sql.session.timeZone", "UTC")
             .config("spark.sql.warehouse.dir", str(tmp_path_factory.mktemp("spark-warehouse")))
+            .config(
+                "spark.hadoop.javax.jdo.option.ConnectionURL",
+                f"jdbc:derby:;databaseName={metastore / 'metastore_db'};create=true",
+            )
+            .config(
+                "spark.driver.extraJavaOptions",
+                f"-Dderby.stream.error.file={metastore / 'derby.log'}",
+            )
+            .enableHiveSupport()
             .getOrCreate()
         )
         yield session
