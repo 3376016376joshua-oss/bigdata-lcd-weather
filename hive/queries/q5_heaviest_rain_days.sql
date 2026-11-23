@@ -12,7 +12,7 @@ WITH ranked AS (
     ROW_NUMBER() OVER (PARTITION BY city_code ORDER BY prcp_in DESC, obs_date) AS city_rank,
     RANK() OVER (ORDER BY prcp_in DESC) AS overall_rank
   FROM ${hivevar:db}.lcd_daily
-  WHERE prcp_in >= 0.01
+  WHERE is_primary_station AND prcp_in >= 0.01
 )
 SELECT
   city_code,

@@ -15,7 +15,7 @@ WITH dry_days AS (
       CAST(ROW_NUMBER() OVER (PARTITION BY city_code ORDER BY obs_date) AS INT)
     ) AS island_key
   FROM ${hivevar:db}.lcd_daily
-  WHERE prcp_in < 0.01
+  WHERE is_primary_station AND prcp_in < 0.01
 ),
 spells AS (
   SELECT

@@ -15,7 +15,7 @@ WITH daily_month AS (
     SUM(IF(prcp_in >= 0.01, 1, 0)) AS wet_days,
     SUM(prcp_in) AS total_prcp
   FROM ${hivevar:db}.lcd_daily
-  WHERE prcp_in IS NOT NULL
+  WHERE is_primary_station AND prcp_in IS NOT NULL
   GROUP BY city_code, yr, MONTH(obs_date)
 ),
 official AS (
@@ -25,6 +25,7 @@ official AS (
     `month` AS mo,
     MAX(total_prcp_in - dep_prcp_in) AS normal_prcp
   FROM ${hivevar:db}.lcd_monthly
+  WHERE is_primary_station
   GROUP BY city_code, yr, `month`
 ),
 joined AS (

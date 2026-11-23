@@ -10,7 +10,7 @@ WITH la_days AS (
     prcp_in,
     IF(yr BETWEEN 2012 AND 2016, 'drought 2012-2016', 'other years') AS period_label
   FROM ${hivevar:db}.lcd_daily
-  WHERE city_code = 'KCQT' AND prcp_in IS NOT NULL
+  WHERE is_primary_station AND city_code = 'KCQT' AND prcp_in IS NOT NULL
 ),
 annual AS (
   SELECT

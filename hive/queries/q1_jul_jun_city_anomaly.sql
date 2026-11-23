@@ -13,7 +13,7 @@ WITH tagged AS (
     MONTH(obs_date) AS mo,
     IF(MONTH(obs_date) >= 7, yr, yr - 1) AS start_yr
   FROM ${hivevar:db}.lcd_daily
-  WHERE dep_f IS NOT NULL
+  WHERE is_primary_station AND dep_f IS NOT NULL
 ),
 city_period AS (
   SELECT

@@ -10,7 +10,7 @@ WITH monthly AS (
     MONTH(obs_date) AS mo,
     AVG(dep_f) AS anomaly
   FROM ${hivevar:db}.lcd_daily
-  WHERE dep_f IS NOT NULL
+  WHERE is_primary_station AND dep_f IS NOT NULL
   GROUP BY city_code, yr, MONTH(obs_date)
 ),
 ranked AS (

@@ -11,7 +11,7 @@ WITH hourly_day AS (
     SUM(IF(report_type = 'FM-15', 1, 0)) AS routine_reports,
     MAX(station_pressure_hpa) - MIN(station_pressure_hpa) AS pressure_range
   FROM ${hivevar:db}.lcd_hourly
-  WHERE report_type IN ('FM-15', 'FM-16')
+  WHERE is_primary_station AND report_type IN ('FM-15', 'FM-16')
   GROUP BY city_code, obs_date
 ),
 days AS (
@@ -24,7 +24,7 @@ days AS (
     h.pressure_range
   FROM ${hivevar:db}.lcd_daily d
   JOIN hourly_day h ON d.city_code = h.city_code AND d.obs_date = h.obs_date
-  WHERE d.prcp_in IS NOT NULL
+  WHERE d.is_primary_station AND d.prcp_in IS NOT NULL
 )
 SELECT
   city_code,

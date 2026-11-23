@@ -11,7 +11,7 @@ WITH city_year AS (
     SUM(IF(dep_f >= 10, 1, 0)) AS warm_days,
     SUM(IF(dep_f <= -10, 1, 0)) AS cold_days
   FROM ${hivevar:db}.lcd_daily
-  WHERE dep_f IS NOT NULL
+  WHERE is_primary_station AND dep_f IS NOT NULL
   GROUP BY city_code, yr
 )
 SELECT
