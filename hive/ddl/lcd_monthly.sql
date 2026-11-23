@@ -8,6 +8,7 @@
 --   beeline -u "$LCD_BEELINE_URL" --hivevar db=wl3564_nyu_edu \
 --     --hivevar clean_zone=hdfs:///user/wl3564_nyu_edu/lcd/clean -f hive/ddl/lcd_monthly.sql
 
+CREATE DATABASE IF NOT EXISTS ${hivevar:db};
 USE ${hivevar:db};
 
 CREATE EXTERNAL TABLE IF NOT EXISTS lcd_monthly (

@@ -172,6 +172,9 @@ columns as text, turns the cells into numbers, converts the units and writes thr
 tables partitioned by `station` and `yr` under `$LCD_HDFS_ROOT/clean/`, registered as
 external tables in the Hive database:
 
+Every `run_phase*.sh` script submits its jobs in YARN client mode, so run them on the
+master node.
+
 | Table | Rows from | One row per |
 | --- | --- | --- |
 | `lcd_hourly` | `FM-15` routine, `FM-16` special, `FM-12` synoptic, `SY-MT` synoptic merged with a METAR, `AUTO` automatic station | report |

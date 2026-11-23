@@ -29,6 +29,21 @@ def test_q4_hourly_profile_uses_routine_reports_only(analysis):
     assert profile[("KSEA", "DJF", 12)]["diurnal_anomaly_f"] == 0.0
 
 
+def test_q4_hourly_profile_keeps_the_hour_in_a_session_of_another_time_zone(analysis, tmp_path):
+    analysis.load_tables(hourly=[hourly_row("KSEA", date(2014, 7, 1), 11, minute=53)])
+    # Stored the way Phase 2 stores it: an instant written in a UTC session.
+    stored = str(tmp_path / "lcd_hourly")
+    analysis.spark.table("global_temp.lcd_hourly").write.orc(stored)
+    analysis.spark.read.orc(stored).createOrReplaceGlobalTempView("lcd_hourly")
+    session_time_zone = "spark.sql.session.timeZone"
+    analysis.spark.conf.set(session_time_zone, "America/Los_Angeles")
+    try:
+        (row,) = analysis.rows("q4_hourly_profile")
+    finally:
+        analysis.spark.conf.set(session_time_zone, "UTC")
+    assert row["hr"] == 12
+
+
 def test_q4_monthly_climatology_and_cycle_amplitude(analysis):
     analysis.load_tables(
         daily=[

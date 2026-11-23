@@ -8,6 +8,9 @@ source "$REPO_ROOT/scripts/env.sh"
 
 : "${LCD_BEELINE_URL:=jdbc:hive2://localhost:10000}"
 : "${LCD_SPARK_SUBMIT_OPTS:=}"
+# The driver has to run on this node: it reads config/stations.csv from the repository, and
+# the cluster default (cluster mode) would start it on a worker node that has no checkout.
+SPARK_SUBMIT_MODE="--master yarn --deploy-mode client"
 
 PACKAGE_ZIP=""
 
@@ -25,6 +28,7 @@ submit_job() {
   local job="$1"
   shift
   # LCD_SPARK_SUBMIT_OPTS is a list of extra spark-submit flags, so it is split on spaces.
+  # It comes after SPARK_SUBMIT_MODE so that its flags win, for example --master local[2].
   # shellcheck disable=SC2086
-  spark-submit $LCD_SPARK_SUBMIT_OPTS --py-files "$PACKAGE_ZIP" "$REPO_ROOT/jobs/$job" "$@"
+  spark-submit $SPARK_SUBMIT_MODE $LCD_SPARK_SUBMIT_OPTS --py-files "$PACKAGE_ZIP" "$REPO_ROOT/jobs/$job" "$@"
 }

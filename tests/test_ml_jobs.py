@@ -172,3 +172,14 @@ def test_kmeans_selects_the_best_silhouette(kmeans_results):
     )
     by_city = {row["city_code"]: row for row in features}
     assert float(by_city["KPHX"]["temp_m07"]) > float(by_city["KSEA"]["temp_m07"])
+
+
+def test_session_reads_timestamps_in_utc(spark):
+    from lcdweather.ml.session import build_session
+
+    session_time_zone = "spark.sql.session.timeZone"
+    spark.conf.set(session_time_zone, "America/New_York")
+    try:
+        assert build_session("lcd-ml-test").conf.get(session_time_zone) == "UTC"
+    finally:
+        spark.conf.set(session_time_zone, "UTC")

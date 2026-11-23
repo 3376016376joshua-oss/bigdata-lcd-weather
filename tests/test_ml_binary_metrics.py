@@ -17,12 +17,21 @@ def test_derive_binary_metrics_matches_hand_computation():
     assert metrics["fpr"] == pytest.approx(2 / 12)
 
 
-def test_derive_binary_metrics_is_undefined_without_positive_predictions():
+def test_derive_binary_metrics_without_positive_predictions():
     metrics = derive_binary_metrics(tp=0, fp=0, tn=5, fn=3)
 
     assert metrics["precision"] is None
-    assert metrics["f1"] is None
+    assert metrics["f1"] == 0.0
     assert metrics["recall"] == 0.0
+
+
+def test_f1_is_zero_without_true_positives():
+    assert derive_binary_metrics(tp=0, fp=4, tn=5, fn=3)["f1"] == 0.0
+    assert derive_binary_metrics(tp=0, fp=4, tn=5, fn=0)["f1"] == 0.0
+
+
+def test_f1_is_undefined_only_without_positives_of_either_kind():
+    assert derive_binary_metrics(tp=0, fp=0, tn=5, fn=0)["f1"] is None
 
 
 def test_curve_counts_are_cumulative_from_the_highest_score_bin():

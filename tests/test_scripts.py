@@ -229,7 +229,10 @@ class Phase4ScriptTest(ScriptTestCase):
         job = REPO_ROOT / "jobs" / "phase4_analysis.py"
         for argument in (["--results", "results"], ["--res=results"]):
             with self.subTest(argument=argument):
-                completed = self.run_script([sys.executable, str(job), *argument])
+                # The job imports lcdweather from src, as run_phase4.sh arranges.
+                completed = self.run_script(
+                    [sys.executable, str(job), *argument], PYTHONPATH=str(REPO_ROOT / "src")
+                )
                 self.assertEqual(completed.returncode, 2)
                 self.assertIn("unrecognized arguments", completed.stderr)
 

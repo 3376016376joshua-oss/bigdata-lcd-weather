@@ -48,7 +48,8 @@ def phase2_files(spark, tmp_path_factory):
 @pytest.mark.parametrize("table", sorted(TABLE_COLUMNS))
 def test_ddl_registers_the_phase2_files_with_the_contract_schema(spark, phase2_files, table):
     hivevars = {"db": DDL_DATABASE, "clean_zone": str(phase2_files)}
-    spark.sql(f"CREATE DATABASE IF NOT EXISTS {DDL_DATABASE}")
+    # A --files-only run leaves no database behind, so the DDL has to create it itself.
+    spark.sql(f"DROP DATABASE IF EXISTS {DDL_DATABASE} CASCADE")
     current_database = spark.catalog.currentDatabase()
     try:
         for statement in _ddl_statements(table, hivevars):
