@@ -17,6 +17,7 @@ from lcdweather.analysis.catalog import ANALYSIS_QUESTIONS, discover_queries, se
 from lcdweather.analysis.export import write_result
 from lcdweather.analysis.runner import run_analysis
 from lcdweather.config import load_settings
+from lcdweather.ingest.session import SESSION_TIME_ZONE
 
 APP_NAME = "lcd-phase4-analysis"
 DEFAULT_QUERIES_DIR = "hive/queries"
@@ -46,10 +47,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def build_session() -> SparkSession:
+    """A Hive session in the time zone of the ingestion, so obs_ts keeps its hour."""
+    return (
+        SparkSession.builder.appName(APP_NAME)
+        .config("spark.sql.session.timeZone", SESSION_TIME_ZONE)
+        .enableHiveSupport()
+        .getOrCreate()
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     queries = select_queries(discover_queries(args.queries_dir), args.questions)
-    spark = SparkSession.builder.appName(APP_NAME).enableHiveSupport().getOrCreate()
+    spark = build_session()
     try:
         written = run_analysis(
             spark, queries, args.db, partial(write_result, results_dir=args.results_dir)

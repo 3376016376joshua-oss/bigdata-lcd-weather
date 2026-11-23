@@ -34,13 +34,18 @@ SERIES_COLORS = {"Actual": COLD_COLOR, "Normal": NEUTRAL_COLOR}
 def calendar_month_means(monthly: pd.DataFrame) -> pd.DataFrame:
     """Mean actual and normal precipitation per city and calendar month.
 
-    The station normal is used for a city when every month has one; otherwise the
-    2010-2025 mean of the calendar month stands in for it.
+    The normal is the station normal of the calendar month; only a calendar month that
+    has none in any year falls back to its 2010-2025 mean.
     """
-    has_normal = monthly.groupby("city")["normal_prcp_in"].transform(lambda s: s.notna().all())
-    baseline = monthly["normal_prcp_in"].where(has_normal, monthly["period_mean_prcp_in"])
-    prepared = monthly.assign(actual_in=monthly["total_prcp_in"], normal_in=baseline)
-    return prepared.groupby(["city", "mo"], as_index=False)[["actual_in", "normal_in"]].mean()
+    prepared = monthly.assign(
+        actual_in=monthly["total_prcp_in"],
+        normal_in=monthly["normal_prcp_in"],
+        period_mean_in=monthly["period_mean_prcp_in"],
+    )
+    columns = ["actual_in", "normal_in", "period_mean_in"]
+    means = prepared.groupby(["city", "mo"], as_index=False)[columns].mean()
+    means["normal_in"] = means["normal_in"].fillna(means["period_mean_in"])
+    return means.drop(columns="period_mean_in")
 
 
 def actual_vs_normal_png(means: pd.DataFrame):

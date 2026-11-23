@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import random
 from datetime import date, timedelta
 from functools import partial
@@ -140,3 +141,16 @@ def test_write_cluster_csv_writes_one_part_file_with_header(analysis, tmp_path):
     header, row = parts[0].read_text(encoding="utf-8").splitlines()
     assert header.split(",")[:4] == ["city_code", "city", "yr", "mo"]
     assert row.split(",")[:4] == ["KNYC", "New York", "2014", "1"]
+
+
+def test_job_session_reads_timestamps_in_utc(spark, queries_dir):
+    job_path = queries_dir.parents[1] / "jobs" / "phase4_analysis.py"
+    spec = importlib.util.spec_from_file_location("phase4_analysis", job_path)
+    job = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(job)
+    session_time_zone = "spark.sql.session.timeZone"
+    spark.conf.set(session_time_zone, "America/New_York")
+    try:
+        assert job.build_session().conf.get(session_time_zone) == "UTC"
+    finally:
+        spark.conf.set(session_time_zone, "UTC")

@@ -11,6 +11,8 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_URI = "hdfs:///user/tester_nyu_edu/lcd/results"
 SPARK_OPTS = "--num-executors 4 --executor-memory 4g"
+# Client mode first, so the driver runs where the checkout is; the user's flags follow.
+SUBMIT_PREFIX = f"--master yarn --deploy-mode client {SPARK_OPTS} --py-files "
 
 FAKE_SPARK_SUBMIT = """#!/usr/bin/env bash
 echo "$*" >> "$FAKE_LOG"
@@ -74,7 +76,7 @@ def test_phase5_submits_every_job_and_fetches_the_results(cluster):
     submitted = [line for line in log.read_text().splitlines() if not line.startswith("hdfs")]
     assert len(submitted) == 3
     for line, job in zip(submitted, ("regression", "classification", "kmeans")):
-        assert line.startswith(f"{SPARK_OPTS} --py-files ")
+        assert line.startswith(SUBMIT_PREFIX)
         assert f"jobs/phase5_{job}.py --database tester_nyu_edu" in line
         assert f"--results-dir {RESULTS_URI}" in line
         assert ("--grid full" in line) == (job != "kmeans")
@@ -129,7 +131,7 @@ def test_phase6_times_both_jobs_on_hdfs_input(cluster):
     ]
     submitted = [line for line in log.read_text().splitlines() if not line.startswith("hdfs")]
     root = "hdfs:///user/tester_nyu_edu/lcd"
-    assert all(line.startswith(f"{SPARK_OPTS} --py-files ") for line in submitted)
+    assert all(line.startswith(SUBMIT_PREFIX) for line in submitted)
     assert submitted[0].endswith(
         f"jobs/phase2_ingest.py --input {root}/raw --output {root}/timing/clean/1y"
         " --db tester_nyu_edu_timing_t1y --years 2025-2025"

@@ -16,13 +16,11 @@ def derive_binary_metrics(tp: int, fp: int, tn: int, fn: int) -> dict[str, float
     """Precision, recall, F1, accuracy and false-positive rate (None if undefined)."""
     precision = _ratio(tp, tp + fp)
     recall = _ratio(tp, tp + fn)
-    f1 = None
-    if precision is not None and recall is not None:
-        f1 = _ratio(2 * precision * recall, precision + recall)
     return {
         "precision": precision,
         "recall": recall,
-        "f1": f1,
+        # From the counts, so that no true positives gives 0 rather than an undefined ratio.
+        "f1": _ratio(2 * tp, 2 * tp + fp + fn),
         "accuracy": _ratio(tp + tn, tp + fp + tn + fn),
         "fpr": _ratio(fp, fp + tn),
     }

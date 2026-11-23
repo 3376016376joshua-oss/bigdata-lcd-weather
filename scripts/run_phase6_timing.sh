@@ -17,5 +17,5 @@ cd "$REPO_ROOT"
 
 build_package_zip
 PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:${PYTHONPATH}}" python3 jobs/phase6_timing.py \
-  --spark-submit "spark-submit ${LCD_SPARK_SUBMIT_OPTS} --py-files ${PACKAGE_ZIP}" \
+  --spark-submit "spark-submit ${SPARK_SUBMIT_MODE} ${LCD_SPARK_SUBMIT_OPTS} --py-files ${PACKAGE_ZIP}" \
   "$@"
