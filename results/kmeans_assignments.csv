@@ -1,0 +1,51 @@
+k,selected,city_code,city,cluster
+2,True,KCLT,Charlotte,0
+2,True,KCQT,Los Angeles,1
+2,True,KHOU,Houston,0
+2,True,KIND,Indianapolis,0
+2,True,KJAX,Jacksonville,0
+2,True,KMDW,Chicago,0
+2,True,KNYC,New York,0
+2,True,KPHL,Philadelphia,0
+2,True,KPHX,Phoenix,1
+2,True,KSEA,Seattle,0
+3,False,KCLT,Charlotte,0
+3,False,KCQT,Los Angeles,1
+3,False,KHOU,Houston,0
+3,False,KIND,Indianapolis,0
+3,False,KJAX,Jacksonville,0
+3,False,KMDW,Chicago,0
+3,False,KNYC,New York,0
+3,False,KPHL,Philadelphia,0
+3,False,KPHX,Phoenix,1
+3,False,KSEA,Seattle,2
+4,False,KCLT,Charlotte,0
+4,False,KCQT,Los Angeles,1
+4,False,KHOU,Houston,0
+4,False,KIND,Indianapolis,2
+4,False,KJAX,Jacksonville,0
+4,False,KMDW,Chicago,2
+4,False,KNYC,New York,2
+4,False,KPHL,Philadelphia,2
+4,False,KPHX,Phoenix,3
+4,False,KSEA,Seattle,2
+5,False,KCLT,Charlotte,4
+5,False,KCQT,Los Angeles,1
+5,False,KHOU,Houston,0
+5,False,KIND,Indianapolis,4
+5,False,KJAX,Jacksonville,0
+5,False,KMDW,Chicago,4
+5,False,KNYC,New York,4
+5,False,KPHL,Philadelphia,4
+5,False,KPHX,Phoenix,3
+5,False,KSEA,Seattle,2
+6,False,KCLT,Charlotte,4
+6,False,KCQT,Los Angeles,1
+6,False,KHOU,Houston,0
+6,False,KIND,Indianapolis,4
+6,False,KJAX,Jacksonville,0
+6,False,KMDW,Chicago,5
+6,False,KNYC,New York,4
+6,False,KPHL,Philadelphia,4
+6,False,KPHX,Phoenix,3
+6,False,KSEA,Seattle,2

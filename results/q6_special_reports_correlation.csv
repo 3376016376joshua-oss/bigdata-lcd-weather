@@ -1,0 +1,11 @@
+city_code,city,n_days,routine_reports,special_reports,mean_special_reports_per_day,corr_special_vs_prcp,corr_special_vs_pressure_range,mean_pressure_range_hpa
+KCLT,Charlotte,5841,140168,27404,4.69,0.605,0.038,5.48
+KCQT,Los Angeles,5839,140297,34482,5.91,0.619,0.116,3.56
+KHOU,Houston,5840,140316,30870,5.29,0.515,0.176,4.75
+KIND,Indianapolis,5841,140189,34105,5.84,0.54,0.298,6.01
+KJAX,Jacksonville,5841,159500,28410,4.86,0.529,0.125,4.3
+KMDW,Chicago,5830,139990,28387,4.87,0.502,0.278,6.57
+KNYC,New York,5839,140301,39719,6.8,0.664,0.26,7.07
+KPHL,Philadelphia,5841,140468,44402,7.6,0.626,0.263,6.94
+KPHX,Phoenix,5841,140151,4299,0.74,0.592,0.103,5.05
+KSEA,Seattle,5836,140133,40207,6.89,0.415,0.19,5.89

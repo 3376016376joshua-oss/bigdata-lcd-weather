@@ -1,0 +1,11 @@
+model,params,metric,validation_score,selected
+logistic_regression,"{\"elasticNetParam\": 0.0, \"regParam\": 0.0}",auc_roc,0.8077562147448204,True
+logistic_regression,"{\"elasticNetParam\": 0.5, \"regParam\": 0.0}",auc_roc,0.8077487881487321,False
+logistic_regression,"{\"elasticNetParam\": 0.0, \"regParam\": 0.01}",auc_roc,0.8059540900990878,False
+logistic_regression,"{\"elasticNetParam\": 0.5, \"regParam\": 0.01}",auc_roc,0.8035190126500313,False
+logistic_regression,"{\"elasticNetParam\": 0.0, \"regParam\": 0.1}",auc_roc,0.79768429333212,False
+logistic_regression,"{\"elasticNetParam\": 0.5, \"regParam\": 0.1}",auc_roc,0.7851495622444641,False
+random_forest,"{\"maxDepth\": 5, \"numTrees\": 100}",auc_roc,0.7958329087325866,False
+random_forest,"{\"maxDepth\": 10, \"numTrees\": 100}",auc_roc,0.8214588015692491,False
+random_forest,"{\"maxDepth\": 5, \"numTrees\": 200}",auc_roc,0.7967353811686341,False
+random_forest,"{\"maxDepth\": 10, \"numTrees\": 200}",auc_roc,0.821681787466989,True

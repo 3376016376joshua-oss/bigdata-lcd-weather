@@ -1,0 +1,4 @@
+table,n_rows,n_primary_rows,n_stations,n_station_years,first_yr,last_yr
+lcd_hourly,1984869,1980231,11,161,2010,2025
+lcd_daily,59169,58438,11,162,2010,2025
+lcd_monthly,1944,1920,11,162,2010,2025

@@ -1,0 +1,11 @@
+deviation_rank,city_code,city,n_months,mean_monthly_anomaly_f,mean_abs_monthly_anomaly_f,warmest_yyyymm,warmest_month_anomaly_f,coldest_yyyymm,coldest_month_anomaly_f
+1,KIND,Indianapolis,192,1.02,3.03,201203,14.15,201502,-12.09
+2,KMDW,Chicago,192,0.93,3.02,201203,14.27,201502,-11.39
+3,KPHL,Philadelphia,192,1.43,2.63,201512,12.63,201502,-9.95
+4,KCLT,Charlotte,192,1.01,2.53,201512,10.73,201012,-9.87
+5,KHOU,Houston,192,1.08,2.39,202112,12.99,201002,-9.52
+6,KNYC,New York,192,0.77,2.31,201512,11.79,201502,-11.75
+7,KPHX,Phoenix,192,1.05,2.26,202512,7.45,201902,-5.75
+8,KJAX,Jacksonville,192,0.55,2.08,201512,9.92,201012,-10.45
+9,KSEA,Seattle,192,0.06,1.92,201506,5.69,201902,-7.25
+10,KCQT,Los Angeles,192,0.55,1.8,201503,7.13,201902,-4.93

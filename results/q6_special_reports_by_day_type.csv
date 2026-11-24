@@ -1,0 +1,21 @@
+city_code,city,day_type,n_days,special_reports,mean_special_reports_per_day,pct_days_with_special,special_share_of_reports_pct,mean_pressure_range_hpa
+KCLT,Charlotte,dry,4028,7130,1.77,33.5,6.9,5.16
+KCLT,Charlotte,wet,1813,20274,11.18,93.9,31.7,6.17
+KCQT,Los Angeles,dry,5291,22350,4.22,58.0,15.0,3.46
+KCQT,Los Angeles,wet,548,12132,22.14,94.3,47.6,4.58
+KHOU,Houston,dry,4155,13073,3.15,50.5,11.6,4.56
+KHOU,Houston,wet,1685,17797,10.56,95.1,30.5,5.21
+KIND,Indianapolis,dry,3813,8872,2.33,38.4,8.8,5.28
+KIND,Indianapolis,wet,2028,25233,12.44,93.7,34.1,7.38
+KJAX,Jacksonville,dry,4050,10899,2.69,46.3,8.9,4.14
+KJAX,Jacksonville,wet,1791,17511,9.78,94.9,26.7,4.66
+KMDW,Chicago,dry,3898,8162,2.09,41.8,8.0,5.93
+KMDW,Chicago,wet,1932,20225,10.47,91.7,30.3,7.85
+KNYC,New York,dry,3819,6908,1.81,29.0,7.0,6.12
+KNYC,New York,wet,2020,32811,16.24,93.0,40.2,8.88
+KPHL,Philadelphia,dry,3904,9204,2.36,39.4,8.9,6.04
+KPHL,Philadelphia,wet,1937,35198,18.17,97.5,42.9,8.75
+KPHX,Phoenix,dry,5329,1883,0.35,17.9,1.5,4.99
+KPHX,Phoenix,wet,512,2416,4.72,77.3,16.4,5.66
+KSEA,Seattle,dry,3307,13192,3.99,60.8,14.3,4.62
+KSEA,Seattle,wet,2529,27015,10.68,93.8,30.8,7.55
