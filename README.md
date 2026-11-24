@@ -101,16 +101,37 @@ export LCD_NETID=wl3564   # your own NetID
 The cluster already provides Python 3, Spark, Hive and HDFS; the figure step installs
 Plotly for your user if it is missing.
 
-All six phases in one go, in the background so a closed terminal does not stop them:
+### Quick start: the whole study in one command
 
 ```bash
 mkdir -p logs && nohup bash scripts/run_all.sh > logs/run_all.log 2>&1 &
-tail logs/run_all.log                                      # one line per step, with run time
-bash scripts/run_all.sh 3                                  # start at Phase 3 instead
+tail logs/run_all.log      # check progress: one line per step, with its run time
 ```
 
-Each step writes its full output to `logs/<step>.log`; a failed step prints the end of its
-log and stops the run. The sections below run the phases one at a time.
+What each part of the first line does:
+
+| Part | Meaning |
+| --- | --- |
+| `mkdir -p logs` | create the `logs/` folder if it does not exist |
+| `&&` | run the next part only if that worked |
+| `nohup` | keep running after the terminal is closed |
+| `bash scripts/run_all.sh` | run every phase in order, Phase 1 to Phase 6 |
+| `> logs/run_all.log 2>&1` | write all messages and errors to `logs/run_all.log` instead of the screen |
+| `&` | run in the background and give the terminal back at once |
+
+A full run from scratch takes a few hours. Each step also writes its full output to
+`logs/<step>.log`; a failed step prints the end of its log and stops the run.
+`bash scripts/run_all.sh 3` starts at Phase 3 when Phases 1-2 are already done.
+
+Which script does what:
+
+| Script | Phases | Needs |
+| --- | --- | --- |
+| `scripts/run_all.sh` | 1-6: download, Hive tables, validation, questions 1-6, models, timing, figures | nothing; starts from scratch |
+| `scripts/run_phase6_figures.sh` | 6 only: draws the figures | the result CSVs of Phases 3-6 in `results/` |
+
+`run_phase6_figures.sh` does not rerun Phases 1-5; it only turns their results into figures.
+The sections below run the phases one at a time.
 
 The Spark scripts give the driver 1 GB of memory and a short job history
 (`LCD_SPARK_CLUSTER_OPTS` in `scripts/phase_common.sh`): the cluster limits each user to
