@@ -98,8 +98,23 @@ cd bigdata-lcd-weather
 export LCD_NETID=wl3564   # your own NetID
 ```
 
-The cluster already provides Python 3, Spark, Hive and HDFS; nothing has to be installed
-there.
+The cluster already provides Python 3, Spark, Hive and HDFS; the figure step installs
+Plotly for your user if it is missing.
+
+All six phases in one go, in the background so a closed terminal does not stop them:
+
+```bash
+mkdir -p logs && nohup bash scripts/run_all.sh > logs/run_all.log 2>&1 &
+tail logs/run_all.log                                      # one line per step, with run time
+bash scripts/run_all.sh 3                                  # start at Phase 3 instead
+```
+
+Each step writes its full output to `logs/<step>.log`; a failed step prints the end of its
+log and stops the run. The sections below run the phases one at a time.
+
+The Spark scripts give the driver 1 GB of memory and a short job history
+(`LCD_SPARK_CLUSTER_OPTS` in `scripts/phase_common.sh`): the cluster limits each user to
+3 GB on the master node, where the driver runs, and kills a driver that goes over.
 
 ### Phase 1 - Collecting and checking the data
 
@@ -362,8 +377,8 @@ bash scripts/run_phase5.sh fetch       # only download the results again
 ```
 
 The script zips `src/lcdweather` for `--py-files`, so nothing is installed on the cluster.
-`LCD_SPARK_SUBMIT_OPTS` (extra spark-submit flags, shared with `run_phase2.sh`; default
-none, so the cluster defaults apply), `PHASE5_JOB_ARGS` (extra flags for every job) and `PHASE5_GRID` (`full`, or `quick` for a one-point grid) adjust the run. One job by hand:
+`LCD_SPARK_SUBMIT_OPTS` (extra spark-submit flags, shared with `run_phase2.sh`, applied
+after the `LCD_SPARK_CLUSTER_OPTS` defaults), `PHASE5_JOB_ARGS` (extra flags for every job) and `PHASE5_GRID` (`full`, or `quick` for a one-point grid) adjust the run. One job by hand:
 
 ```bash
 (cd src && python3 -m zipfile -c ../lcdweather.zip lcdweather)
@@ -418,17 +433,17 @@ LCD_SPARK_SUBMIT_OPTS="--master local[2]" PHASE5_JOB_ARGS="--synthetic" PHASE5_G
 _Exporting `results/*.csv` from HDFS and drawing the figures. Steps are added with the
 visualization code._
 
-#### Figures for questions 1-6
+#### Figures
 
-The figure scripts read only `results/*.csv` and write a PNG (matplotlib/seaborn) and an
-interactive HTML page (Plotly) per figure into `figures/`:
+Every figure, for questions 1-8, k-means and the run-time scaling, in one step (it installs
+Plotly and seaborn for your user when they are missing):
 
 ```bash
-for script in viz/q1_anomaly.py viz/q2_extremes.py viz/q3_balance.py \
-              viz/q4_cycles.py viz/q5_precipitation.py viz/q6_volatility.py; do
-  python "$script" --results-dir results --figures-dir figures
-done
+bash scripts/run_phase6_figures.sh
 ```
+
+The figure scripts read only `results/*.csv`. Those for questions 1-6 write a PNG
+(matplotlib/seaborn) and an interactive HTML page (Plotly) per figure into `figures/`:
 
 | Script | Figures |
 | --- | --- |

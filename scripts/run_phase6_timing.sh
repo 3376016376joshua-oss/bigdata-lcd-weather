@@ -15,7 +15,12 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/phase_common.sh"
 cd "$REPO_ROOT"
 
+# The metastore creates each timing database's folder under the warehouse as the hive user,
+# so the folder has to exist and be writable by it.
+hdfs dfs -mkdir -p "${LCD_HDFS_ROOT}/warehouse"
+hdfs dfs -chmod 777 "${LCD_HDFS_ROOT}/warehouse"
+
 build_package_zip
 PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:${PYTHONPATH}}" python3 jobs/phase6_timing.py \
-  --spark-submit "spark-submit ${SPARK_SUBMIT_MODE} ${LCD_SPARK_SUBMIT_OPTS} --py-files ${PACKAGE_ZIP}" \
+  --spark-submit "spark-submit ${SPARK_SUBMIT_MODE} ${LCD_SPARK_CLUSTER_OPTS} ${LCD_SPARK_SUBMIT_OPTS} --py-files ${PACKAGE_ZIP}" \
   "$@"
