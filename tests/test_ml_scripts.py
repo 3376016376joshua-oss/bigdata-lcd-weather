@@ -11,8 +11,15 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_URI = "hdfs:///user/tester_nyu_edu/lcd/results"
 SPARK_OPTS = "--num-executors 4 --executor-memory 4g"
-# Client mode first, so the driver runs where the checkout is; the user's flags follow.
-SUBMIT_PREFIX = f"--master yarn --deploy-mode client {SPARK_OPTS} --py-files "
+# The cluster defaults of scripts/phase_common.sh for the tester's HDFS root.
+CLUSTER_OPTS = (
+    "--driver-memory 1g --conf spark.ui.retainedJobs=50 --conf spark.ui.retainedStages=50"
+    " --conf spark.sql.ui.retainedExecutions=20 --conf spark.eventLog.enabled=false"
+    " --conf spark.sql.warehouse.dir=hdfs:///user/tester_nyu_edu/lcd/warehouse"
+)
+# Client mode first, so the driver runs where the checkout is; the cluster defaults and then
+# the user's flags follow, so the user's flags win.
+SUBMIT_PREFIX = f"--master yarn --deploy-mode client {CLUSTER_OPTS} {SPARK_OPTS} --py-files "
 
 FAKE_SPARK_SUBMIT = """#!/usr/bin/env bash
 echo "$*" >> "$FAKE_LOG"
@@ -52,7 +59,13 @@ def cluster(tmp_path):
         "LCD_RESULTS_DIR": str(tmp_path / "results"),
         "LCD_SPARK_SUBMIT_OPTS": SPARK_OPTS,
     }
-    for inherited in ("LCD_HDFS_ROOT", "LCD_HIVE_DB", "LCD_RESULTS_URI", "SPARK_SUBMIT"):
+    for inherited in (
+        "LCD_HDFS_ROOT",
+        "LCD_HIVE_DB",
+        "LCD_RESULTS_URI",
+        "LCD_SPARK_CLUSTER_OPTS",
+        "SPARK_SUBMIT",
+    ):
         environment.pop(inherited, None)
     return environment, log, tmp_path / "results"
 
@@ -141,4 +154,5 @@ def test_phase6_times_both_jobs_on_hdfs_input(cluster):
         f" --results-dir {root}/timing/results/4y"
     )
     assert "hdfs dfs -du hdfs:///user/tester_nyu_edu/lcd/raw/*/LCD_*_2025.csv" in log.read_text()
+    assert f"hdfs dfs -chmod 777 {root}/warehouse" in log.read_text()
     assert (results / "runtime_scaling_summary.csv").exists()
