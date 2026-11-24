@@ -1,0 +1,13 @@
+model,threshold,actual,predicted,count
+logistic_regression,0.5,wet,wet,893
+logistic_regression,0.5,dry,wet,447
+logistic_regression,0.5,dry,dry,4797
+logistic_regression,0.5,wet,dry,1171
+random_forest,0.5,wet,wet,857
+random_forest,0.5,dry,wet,340
+random_forest,0.5,dry,dry,4904
+random_forest,0.5,wet,dry,1207
+persistence,0.5,wet,wet,1043
+persistence,0.5,dry,wet,1017
+persistence,0.5,dry,dry,4227
+persistence,0.5,wet,dry,1019

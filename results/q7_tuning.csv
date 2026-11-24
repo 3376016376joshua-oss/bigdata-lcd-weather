@@ -1,0 +1,11 @@
+model,params,metric,validation_score,selected
+linear_regression,"{\"elasticNetParam\": 0.0, \"regParam\": 0.0}",rmse,5.256809755872211,False
+linear_regression,"{\"elasticNetParam\": 0.5, \"regParam\": 0.0}",rmse,5.256810127814379,False
+linear_regression,"{\"elasticNetParam\": 0.0, \"regParam\": 0.01}",rmse,5.254093315094321,False
+linear_regression,"{\"elasticNetParam\": 0.5, \"regParam\": 0.01}",rmse,5.23144731161347,False
+linear_regression,"{\"elasticNetParam\": 0.0, \"regParam\": 0.1}",rmse,5.241164080428974,False
+linear_regression,"{\"elasticNetParam\": 0.5, \"regParam\": 0.1}",rmse,5.223076515002855,True
+gbt_regressor,"{\"maxDepth\": 3, \"maxIter\": 50, \"stepSize\": 0.1}",rmse,5.4433640967398125,False
+gbt_regressor,"{\"maxDepth\": 3, \"maxIter\": 100, \"stepSize\": 0.1}",rmse,5.1560583914060425,False
+gbt_regressor,"{\"maxDepth\": 5, \"maxIter\": 50, \"stepSize\": 0.1}",rmse,5.205225530621391,False
+gbt_regressor,"{\"maxDepth\": 5, \"maxIter\": 100, \"stepSize\": 0.1}",rmse,5.0150109295566825,True

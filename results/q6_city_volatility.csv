@@ -1,0 +1,11 @@
+volatility_rank,city_code,city,n_days,n_changes,tavg_change_sd_f,mean_abs_tavg_change_f,mean_daily_range_f,mean_rh_pct,mean_dewpt_f
+1,KMDW,Chicago,5842,5826,6.39,4.84,16.07,64.6,40.3
+2,KIND,Indianapolis,5844,5841,6.3,4.73,18.46,69.2,43.5
+3,KNYC,New York,5844,5843,5.86,4.51,14.1,61.3,41.8
+4,KPHL,Philadelphia,5844,5843,5.73,4.36,16.93,62.7,43.6
+5,KCLT,Charlotte,5844,5843,5.46,4.05,21.64,65.5,49.2
+6,KHOU,Houston,5844,5839,5.03,3.47,17.6,71.1,60.6
+7,KJAX,Jacksonville,5844,5843,5.0,3.45,21.51,76.4,59.9
+8,KSEA,Seattle,5844,5841,3.53,2.74,14.83,72.1,43.4
+9,KPHX,Phoenix,5844,5843,3.42,2.57,23.46,30.5,38.1
+10,KCQT,Los Angeles,5844,5843,2.86,2.14,17.71,64.2,50.3
